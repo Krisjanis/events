@@ -24,9 +24,6 @@ class Controller_User extends Controller_Public
 
     /**
      * The basic welcome message
-     *
-     * @access  public
-     * @return  Response
      */
     public function action_index()
     {
@@ -125,25 +122,25 @@ class Controller_User extends Controller_Public
             // If form valid create user
             if (!$is_error) {
                 $verification_key = md5(mt_rand(0, mt_getrandmax()));
-//                $id = Auth::instance()->create_user(
-//                    Input::post('username'),
-//                    Input::post('password'),
-//                    Input::post('email'),
-//                    1,
-//                    array(
-//                        'verified'            => false,
-//                        'verification_key'    => $verification_key
-//                    )
-//                );
-//
-//                // Save name and surname for just created user
-//                $user = Model_Orm_User::find($id);
-//                $user->set(array(
-//                    'name'  => Input::post('name'),
-//                    'surname' => Input::post('surname')
-//                ));
-//                $user->save();
-                $id =1;
+                $id = Auth::instance()->create_user(
+                    Input::post('username'),
+                    Input::post('password'),
+                    Input::post('email'),
+                    1,
+                    array(
+                        'verified'            => false,
+                        'verification_key'    => $verification_key
+                    )
+                );
+
+                // Save name and surname for just created user
+                $user = Model_Orm_User::find($id);
+                $user->set(array(
+                    'name'  => Input::post('name'),
+                    'surname' => Input::post('surname')
+                ));
+                $user->save();
+                //$id =1;
 
                 Session::set_flash('success', 'Jūs esat veiksmīgi reģistrējies, atliek vienīgi apstiprināt kontu no e-pasta.');
                 // User ir registered, send him vertification email;

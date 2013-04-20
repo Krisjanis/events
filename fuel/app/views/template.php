@@ -7,8 +7,12 @@
                 echo $page_title;
             }
         ?></title>
-        <?php echo Asset::css('bootstrap.css'); ?>
-        <?php echo Asset::css('style.css'); ?>
+        <?php
+            echo Asset::css('bootstrap.css');
+            echo Asset::css('style.css');
+            echo Asset::js('jquery-1.9.1.min.js');
+            echo Asset::js('script.js');
+        ?>
     </head>
     <body>
         <div class="container-wrap">

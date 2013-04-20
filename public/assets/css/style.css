@@ -5,4 +5,17 @@
 
 .content-wrap {
     margin-top: 50px;
+    margin-bottom: 200px;
+}
+
+.controls .help-block {
+    margin-bottom: 20px;
+}
+
+.not-mandetory .well:hover {
+    cursor: pointer;
+}
+
+textarea {
+    max-width: 600px;
 }
