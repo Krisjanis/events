@@ -4,7 +4,7 @@ echo Form::fieldset_open(null, "Reģistrējies pasākumu organizēšanas vietnē
 
 // Check if there is no error in form submition
 $errors = Session::get_flash('errors');
-if (isset($errors)) {
+if (isset($errors)) :
 ?>
 <div class="alert alert-error">
     <h4>Kļūda!</h4>
@@ -14,7 +14,7 @@ if (isset($errors)) {
         }
     ?>
 </div>
-<?php } ?>
+<?php endif; ?>
 
 <label for="username">Lietotājvārds</label>
 <input type="text" name="username" id="username" value="<?php

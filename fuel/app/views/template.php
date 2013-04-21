@@ -4,7 +4,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title><?php
             if (isset($page_title)) {
-                echo $page_title;
+                echo $page_title . ' | Pasākumu organizēšanas vietne';
             }
         ?></title>
         <?php
@@ -26,7 +26,7 @@
                     </div>
                 </div>
             </div>
-            <div class="content-wrap">
+            <div class="content-wrap clearfix">
                 <?php echo $content; ?>
             </div>
         </div>

@@ -49,7 +49,7 @@ return array(
 		 -1   => array('name' => 'Bloķēts', 'roles' => array('blocked')),
 		 0    => array('name' => 'Viesis', 'roles' => array()),
 		 1    => array('name' => 'Lietotājs', 'roles' => array('user')),
-		 10   => array('name' => 'Prasmīgs lietotājs', 'roles' => array('power user')),
+		 10   => array('name' => 'Prasmīgs lietotājs', 'roles' => array('user', 'power user')),
 		 50   => array('name' => 'Operātors', 'roles' => array('user', 'moderator')),
 		 
 	),
@@ -76,6 +76,8 @@ return array(
 		 * Global allow by assigning true to a role (use with care!):
 		 *   'super' => true,
 		 */
+		 'user'  => array('event' => array('create', 'add_organizator', 'delete_organizator')),
+		 'moderator'  => array('event' => array('create', 'add_organizator'))
 	),
 
 	/**

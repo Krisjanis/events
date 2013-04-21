@@ -121,31 +121,27 @@ class Controller_User extends Controller_Public
 
             // If form valid create user
             if (!$is_error) {
-                $verification_key = md5(mt_rand(0, mt_getrandmax()));
                 $id = Auth::instance()->create_user(
                     Input::post('username'),
                     Input::post('password'),
                     Input::post('email'),
-                    1,
-                    array(
-                        'verified'            => false,
-                        'verification_key'    => $verification_key
-                    )
+                    1
                 );
 
                 // Save name and surname for just created user
                 $user = Model_Orm_User::find($id);
                 $user->set(array(
-                    'name'  => Input::post('name'),
-                    'surname' => Input::post('surname')
+                    'id'         => $id,
+                    'name'       => Input::post('name'),
+                    'surname'    => Input::post('surname')
                 ));
                 $user->save();
-                //$id =1;
 
-                Session::set_flash('success', 'Jūs esat veiksmīgi reģistrējies, atliek vienīgi apstiprināt kontu no e-pasta.');
-                // User ir registered, send him vertification email;
-                $this->action_send_verification_email($id, Input::post('email'), $verification_key);
-                Response::redirect('user/login');
+                // login with user
+                Auth::instance()->force_login($id);
+
+                Session::set_flash('success', 'Jūs esat veiksmīgi reģistrējies!');
+                Response::redirect('/');
             }
             else {
                 // Some error in validation, render registeration form with errors
@@ -163,89 +159,17 @@ class Controller_User extends Controller_Public
     }
 
     /**
-     * Sends a vertification email to given user with vertification key
-     *
-     * @param int $id is ID of user to be vertified
-     * @param string $mail_address is e-mail where to send the vertification
-     * @param int $key is vertification key
-     */
-    public function action_send_verification_email($id, $mail_address, $key)
-    {
-        $email = Email::forge();
-        $email->from('notikumiem@gmail.com', 'Pasakumu organizēšanas sistēma');
-
-        $email->to($mail_address);
-        $email->subject('Reģistrācijas apstiprināšana vietnē notikumiem.lv');
-
-        $mail_text = "Paldies, ka reģistrējāties notikumiem.lv
-        Lai apstiprinātu reģistrēšanos, lūdzu nospiediet uz šīs saites: " .
-        Uri::create('user/verify/' . $id . '/' . $key . '/');
-        $email->body($mail_text);
-        try {
-            $email->send();
-        }
-        catch(\EmailSendingFailedException $e)
-        {
-            // Could not send the email
-            $error[] = 'Kaut kas nogāja greizi, neizdevās nosūtīt epastu!';
-            Session::set_flash('errors', $error);
-        }
-        catch(\EmailValidationFailedException $e)
-        {
-            // Email failed validation.
-            $error[] = 'Kaut kas nogāja greizi, epasts neizturēja validāciju!';
-            Session::set_flash('errors', $error);
-        }
-    }
-
-    /**
-     * Vertifies given user if he has the correct vertification key
-     *
-     * @param int $id is ID of user whos account needs to be vertified
-     * @param string $key is ertification key
-     */
-    public function action_verify($id, $key) {
-        $auth = Auth::instance();
-
-        // Force login with given user
-        if ($auth->force_login($id)) {
-            // Logged in, check if vertification key valid
-            if ($auth->get_profile_fields('verification_key', null) != $key) {
-                // Key doesn't match, logout
-                $auth->logout();
-                $error[] = 'Vertificēšanas atslēga nepareiza!';
-                Session::set_flash('errors', $error);
-            }
-            else {
-                $auth->update_user(array('verified' => true, 'verification_key' => null));
-                Session::set_flash('success', 'Vertificēšana norita veiksmīgi, pieslēdzaties sistēmai!');
-            }
-        }
-        else {
-            // Could not log in
-            $error[] = 'Kaut kas nogāja greizi, nevarēja pieslēgties!';
-            Session::set_flash('errror', $error);
-        }
-        Response::redirect('user/login');
-    }
-
-    /**
      * Logs in the given user if fields are correct
      */
     public function action_login() {
         if (Input::method() == 'POST') {
             $auth = Auth::instance();
 
-            if ($auth->login()) {
-                if ($auth->get_profile_fields('verified', false) == false) {
-                    $errors[] = 'Jūs vēl neesat apstiprinājis kontu ar e-pastu!';
-                    Session::set_flash('errors', $errors);
-                }
-                else {
-                    // credentials ok, go right in
-                    Response::redirect('/') and die();
-                }
-            } else {
+            if ($auth->login($_POST['email'], $_POST['password'])) {
+                // credentials ok, go right in
+                Response::redirect('event/create') and die();
+            }
+            else {
             // Oops, no soup for you. try to login again. Set some values to
             // repopulate the username field and give some error text back to the view
             $errors[] = 'Lietotājvārds un vai parole nepareiza';
@@ -254,7 +178,14 @@ class Controller_User extends Controller_Public
         }
 
         // Show the login form
+        $this->template->page_title = "Pieslēdzies";
         $this->template->content = View::forge('user/login');
+    }
+
+    public function action_logout() {
+        $auth = Auth::instance();
+        $auth->logout();
+        Response::redirect("/");
     }
 }
 
