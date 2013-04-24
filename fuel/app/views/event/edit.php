@@ -1,6 +1,6 @@
 <?php
 echo Form::open(array('class' => 'form-horizontal', 'id' => 'event'));
-echo Form::fieldset_open(null, 'Izveido jaunu pasākumu!');
+echo Form::fieldset_open(null, $formTitle);
 
 // Check if there is no error in form submition
 $errors = Session::get_flash('errors');
@@ -43,32 +43,6 @@ if (isset($errors)) {
     </div>
 </div>
 <div class="control-group">
-    <p class="control-label">Pasākuma tips</p>
-    <div class="controls">
-        <label class="radio">
-            <input type="radio" name="type" id="type1" value="public" <?php
-                if (isset($_POST['type'])) {
-                    if ($_POST['type'] == 'public') {
-                        echo 'checked';
-                    }
-                }
-                else {
-                    echo 'checked';
-                }
-            ?>>
-            Publisks
-        </label>
-        <label class="radio">
-            <input type="radio" name="type" id="type2" value="private" <?php
-                if (isset($_POST['type']) && $_POST['type'] == 'private') {
-                    echo 'checked';
-                }
-            ?>>
-            Privāts
-        </label>
-    </div>
-</div>
-<div class="control-group">
     <label class="control-label" for="desc">Apraksts</label>
     <div class="controls">
         <textarea name="desc" id="desc" class="span5"><?php
@@ -102,7 +76,7 @@ if (isset($errors)) {
     </div>
 </div>
 <div class="page-header">
-    <h2>Neobligāti lauki <small>Uzspied uz lauka, lai pievienotu!</small></h2>
+    <h2>Neobligāti lauki <small>Uzspied uz lauka, lai pievienotu lauku, vai uzspied uz jau esoša laukuma, lai noņemtu to!</small></h2>
 </div>
 <div class="not-mandetory">
      <div class="well well-small">
@@ -195,7 +169,7 @@ if (isset($errors)) {
         </div>
     </div>
 </div>
-<button type="submit" class="btn span3">Izveidot</button>
+<button type="submit" class="btn span3">Saglabāt</button>
 
 <?php
 echo Form::fieldset_close();

@@ -19,3 +19,13 @@
 textarea {
     max-width: 600px;
 }
+
+.user-profile .definition {
+    text-align: right;
+    width: 200px;
+    margin-right: 10px;
+}
+
+.user-profile .info {
+    width: 700px;
+}

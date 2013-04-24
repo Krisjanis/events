@@ -21,20 +21,111 @@
  */
 class Controller_User extends Controller_Public
 {
-
     /**
-     * The basic welcome message
+     * View users onw profile or some other user profile
+     *
+     * @param integer $userId is ID of user which profile is needed to be viewed
      */
-    public function action_index()
-    {
-        //
+    public function action_view($userId = null) {
+        $auth = Auth::instance();
+        $userGroupId = $auth->get_groups();
+
+        // if no user id is given, view users own profile, if quest, register
+        if (is_null($userId)) {
+            if ($userGroupId[0][1] == 0) {
+                // if guest, show register form
+                $error[] = 'Piedod, bet tev nav profila, ko apskatīt, reģistrējies!';
+                Session::set_flash('errors', $error);
+
+                Response::redirect('user/create');
+            }
+            else {
+                // registerred user, view users own profile
+                $userId = Auth::instance()->get_user_id();
+                $userId = $userId[1];
+            }
+        }
+
+        // find needed user
+        $exist_username = Model_Orm_User::find($userId);
+        //var_dump($exist_username); die();
+
+        // if no user found, view user own profile, or register if guest
+        if (empty($exist_username)) {
+            if ($userGroupId[0][1] == 0) {
+                // if guest, show register form
+                $error[] = 'Piedod, bet neatradām šādu lietotāju!';
+                Session::set_flash('errors', $error);
+
+                Response::redirect('user/create');
+            }
+            else {
+                // user not found
+                $error[] = 'Piedod, bet neatradām šādu lietotāju!';
+                Session::set_flash('errors', $error);
+
+                Response::redirect('/');
+            }
+        }
+
+        // user profile found, show it
+        $user = array(
+            'username'  => $exist_username->username,
+            'name'      => $exist_username->name,
+            'surname'   => $exist_username->surname
+        );
+
+        // check if user is author in any events
+        $query = Model_Orm_Organizator::query()
+            ->where('user_id', $userId)
+            ->and_where_open()
+                ->where('is_author', 1)
+            ->and_where_close();
+        $authorObj = $query->get();
+
+        $eventAuthor = array();
+        $i = 0;
+        foreach ($authorObj as $author) {
+            $query = Model_Orm_Event::query()->where('event_id', $author->event_id);
+            $eventObj = $query->get_one();
+            $eventAuthor[$i]['title'] = $eventObj->title;
+            $eventAuthor[$i]['link'] = $eventObj->link_title;
+            $i++;
+        }
+
+        // check if user is organinzator in eny events
+        $query = Model_Orm_Organizator::query()
+            ->where('user_id', $userId)
+            ->and_where_open()
+                ->where('is_author', 0)
+            ->and_where_close();
+        $organizatorsObj = $query->get();
+
+        $eventOrganizator = array();
+        $i = 0;
+        foreach ($organizatorsObj as $organizator) {
+            $query = Model_Orm_Event::query()->where('event_id', $organizator->event_id);
+            $eventObj = $query->get_one();
+            $eventOrganizator[$i]['title'] = $eventObj->title;
+            $eventOrganizator[$i]['link'] = $eventObj->link_title;
+            $i++;
+        }
+
+        $this->template->page_title = $exist_username->username . ' profils';
+        $this->template->content = View::forge('user/view');
+        $this->template->content->set('user', $user);
+        if (!empty($eventAuthor)) {
+            $this->template->content->set('eventAuthor', $eventAuthor);
+        }
+        if (!empty($eventOrganizator)) {
+            $this->template->content->set('eventOrganizator', $eventOrganizator);
+        }
     }
 
     /**
      * Validates register form and creates new user
      */
-    public function action_create()
-    {
+    public function action_create() {
         if (Input::method() == 'POST') {
             // Registeration form submited, validate form
             $is_error = false;

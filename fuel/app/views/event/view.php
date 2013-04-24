@@ -71,7 +71,7 @@
     </ul>
     <?php if ($organizatorAccess) : ?>
         <?php echo Form::open('event/add_organizator'); ?>
-            <h3>Pievienot Organizatoru</h3>
+            <h3>Pievienot organizatoru</h3>
             <div class="input-append span3">
                 <input type="hidden" name="event_id" value="<?php echo $event['id']; ?>"/>
                 <input type="hidden" name="link_title" value="<?php echo $event['link_title']; ?>"/>
@@ -79,5 +79,7 @@
                 <button class="btn" type="submit">Meklēt!</button>
             </div>
         <?php echo Form::close(); ?>
+        <h3>Labot atribūtus</h3>
+        <?php echo Html::anchor('event/edit_attribute/' . $event['link_title'] . '/' . $event['id'], 'Labot!', array('class' => 'btn span1')); ?>
     <?php endif; ?>
 </div>
