@@ -29,3 +29,11 @@ textarea {
 .user-profile .info {
     width: 700px;
 }
+
+.navbar-profile span {
+    margin-left: 5px;
+}
+
+.user-profile-info a:hover {
+    text-decoration: none;
+}

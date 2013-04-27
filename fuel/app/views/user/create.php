@@ -10,7 +10,7 @@ if (isset($errors)) :
     <h4>Kļūda!</h4>
     <?php
         foreach ($errors as $error) {
-            echo $error . '<br />';
+            echo $error.'<br />';
         }
     ?>
 </div>

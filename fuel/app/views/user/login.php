@@ -10,7 +10,7 @@ if (isset($errors)) {
     <h4>Kļūda!</h4>
     <?php
         foreach ($errors as $error) {
-            echo $error . '<br />';
+            echo $error.'<br />';
         }
     ?>
 </div>
@@ -22,7 +22,7 @@ if (isset($success)) {
 ?>
 <div class="alert alert-success">
     <h4>Apsveicu!</h4>
-    <?php echo $success . '<br />'; ?>
+    <?php echo $success.'<br />'; ?>
 </div>
 <?php } ?>
 

@@ -1,3 +1,7 @@
+nbproject/
+.gitignore
+.htaccess
+
 #################
 ## Eclipse
 #################
