@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * The Organizator Model.
+ *
+ * Connects to organizators table in database
+ *
+ * @package  app
+ * @extends  Orm\Model
+ */
 class Model_Orm_Organizator extends Orm\Model
 {
     protected static $_table_name = 'organizators';

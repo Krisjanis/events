@@ -4,7 +4,7 @@
     <h4>Kļūda!</h4>
     <?php
         foreach ($errors as $error) {
-            echo $error . '<br />';
+            echo $error.'<br />';
         }
     ?>
 </div>
@@ -13,7 +13,7 @@
 <?php if (isset($success)) : ?>
 <div class="alert alert-success">
     <h4>Apsveicu!</h4>
-    <?php echo $success . '<br />'; ?>
+    <?php echo $success.'<br />'; ?>
 </div>
 <?php endif; ?>
 <div class="span8 pull-left">
@@ -24,7 +24,7 @@
         <dd><?php echo $event['location']; ?></dd>
         <dt><h2>Norises datums</h2></dt>
         <dd><?php echo $event['date']; ?></dd>
-        <?php if (isset($event['part_min']) && isset($event['part_max'])) : ?>
+        <?php if (isset($event['part_min']) and isset($event['part_max'])) : ?>
             <dt><h2>Dalībnieku skaits</h2><dt>
             <dd>No <?php echo $event['part_min']; ?> līdz <?php echo $event['part_max']; ?> dalībniekiem</dd>
         <?php elseif (isset($event['part_min'])) : ?>
@@ -61,25 +61,24 @@
     <?php foreach ($organizators['organizators'] as $organizator) : ?>
         <li>
             <?php echo $organizator['username']; ?>
-            <?php if ($authorAccess) : ?>
+            <?php if ($author_access) : ?>
                 <div class="pull-right">
-                    <a href="#"><?php echo Html::anchor('event/delete_organizator/' . $event['link_title'] . '/' . $event['id'] . '/' . $organizator['id'], '<span class="label label-warning pull-right">Dzēst</span>'); ?></a>
+                    <a href="#"><?php echo Html::anchor('event/delete_organizator/'.$event['id'].'/'.$event['id'].'/'.$organizator['id'], '<span class="label label-warning pull-right">Dzēst</span>'); ?></a>
                 </div>
             <?php endif; ?>
         </li>
     <?php endforeach; ?>
     </ul>
-    <?php if ($organizatorAccess) : ?>
+    <?php if ($organizator_access) : ?>
         <?php echo Form::open('event/add_organizator'); ?>
             <h3>Pievienot organizatoru</h3>
             <div class="input-append span3">
                 <input type="hidden" name="event_id" value="<?php echo $event['id']; ?>"/>
-                <input type="hidden" name="link_title" value="<?php echo $event['link_title']; ?>"/>
                 <input class="span2" type="text" name="organizator" placeholder="Ievadi lietotāja vārdu ..." />
                 <button class="btn" type="submit">Meklēt!</button>
             </div>
         <?php echo Form::close(); ?>
         <h3>Labot atribūtus</h3>
-        <?php echo Html::anchor('event/edit_attribute/' . $event['link_title'] . '/' . $event['id'], 'Labot!', array('class' => 'btn span1')); ?>
+        <?php echo Html::anchor('event/edit_attribute/'.$event['id'].'/'.$event['id'], 'Labot!', array('class' => 'btn span1')); ?>
     <?php endif; ?>
 </div>

@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * The Event Model.
+ *
+ * Connects to events table in database
+ *
+ * @package  app
+ * @extends  Orm\Model
+ */
 class Model_Orm_Event extends Orm\Model
 {
     protected static $_table_name = 'events';
@@ -8,7 +15,6 @@ class Model_Orm_Event extends Orm\Model
         'event_id',
         'type',
         'title',
-        'link_title',
         'description',
         'location',
         'date',

@@ -2,7 +2,9 @@
 /**
  * The Event Controller.
  *
- * Event controller validates event form and creates new event,
+ * Event controller validates event form and creates new event, sends invitations
+ * to become oganizators to user already in the system and user outside system
+ * with email
  *
  * @package  app
  * @extends  Public
@@ -12,70 +14,54 @@ class Controller_Event extends Controller_Public
     /**
      * Displays event with given link title
      *
-     * @param string $linkTitle unique string of needed event
+     * @param string $event_id unique string of needed event
      */
-    public function action_view($linkTitle = null) {
+    public function action_view($event_id = null)
+    {
         // if no link title given redirect to home page
-        if (is_null($linkTitle)) {
-            Response::redirect('/');
-        }
+        is_null($event_id) and Response::redirect('/');
 
-        // id of current user and author and organizator access
-        $userId = Auth::instance()->get_user_id();
-        $userId = $userId[1];
-        $organizatorAccess = false;
-        $authorAccess = false;
+        // id of current user and chrck if has author or organizator access
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
+        $organizator_access = false;
+        $author_access = false;
 
         // get event
-        $query = Model_Orm_Event::query()->where('link_title', $linkTitle);
-        $eventObj = $query->get_one();
+        $query = Model_Orm_Event::query()->where('event_id', $event_id);
+        $event_obj = $query->get_one();
 
         // if no user found redirect to home page
-        if (is_null($eventObj)) {
-            Response::redirect('/');
-        }
+        is_null($event_obj) and Response::redirect('/');
 
         // save mandetory model atributes in an array
         $event = array(
-            'id'         => $eventObj->event_id,
-            'type'       => $eventObj->type,
-            'title'      => $eventObj->title,
-            'link_title' => $eventObj->link_title,
-            'desc'       => $eventObj->description,
-            'location'   => $eventObj->location,
-            'date'       => $eventObj->date,
+            'id'         => $event_obj->event_id,
+            'type'       => $event_obj->type,
+            'title'      => $event_obj->title,
+            'desc'       => $event_obj->description,
+            'location'   => $event_obj->location,
+            'date'       => $event_obj->date,
         );
 
         // check for additional model attributes
-        if (!is_null($eventObj->participants_min)) {
-            $event['part_min'] = $eventObj->participants_min;
-        }
-        if (!is_null($eventObj->participants_max)) {
-            $event['part_max'] = $eventObj->participants_max;
-        }
-        if (!is_null($eventObj->entry_fee)) {
-            $event['entry_fee'] = $eventObj->entry_fee;
-        }
-        if (!is_null($eventObj->takeaway)) {
-            $event['takeaway'] = $eventObj->takeaway;
-        }
-        if (!is_null($eventObj->dress_code)) {
-            $event['dress_code'] = $eventObj->dress_code;
-        }
-        if (!is_null($eventObj->assistants)) {
-            $event['assistants'] = $eventObj->assistants;
-        }
+        is_null($event_obj->participants_min) or $event['part_min'] = $event_obj->participants_min;
+        is_null($event_obj->participants_max) or $event['part_max'] = $event_obj->participants_max;
+        is_null($event_obj->entry_fee) or $event['entry_fee'] = $event_obj->entry_fee;
+        is_null($event_obj->takeaway) or $event['takeaway'] = $event_obj->takeaway;
+        is_null($event_obj->dress_code) or $event['dress_code'] = $event_obj->dress_code;
+        is_null($event_obj->assistants) or $event['assistants'] = $event_obj->assistants;
 
         // get events author
         $organizators = array();
         $query = Model_Orm_Organizator::query()
-            ->where('event_id', $eventObj->event_id)
+            ->where('event_id', $event_obj->event_id)
             ->and_where_open()
                 ->where('is_author', 1)
             ->and_where_close();
-        $authorId = $query->get_one()->user_id;
+        $author_id = $query->get_one()->user_id;
 
-        $query = Model_Orm_User::query()->where('user_id', $authorId);
+        $query = Model_Orm_User::query()->where('user_id', $author_id);
         $author = $query->get_one();
 
         $organizators['author'] = array(
@@ -83,32 +69,32 @@ class Controller_Event extends Controller_Public
             'username'  => $author->username,
         );
 
-        if ($author->user_id == $userId) {
-            $authorAccess = true;
-            $organizatorAccess = true;
+        if ($author->user_id == $user_id)
+        {
+            $author_access = true;
+            $organizator_access = true;
         }
         // get organizators
         $query = Model_Orm_Organizator::query()
-            ->where('event_id', $eventObj->event_id)
+            ->where('event_id', $event_obj->event_id)
             ->and_where_open()
                 ->where('is_author', 0)
             ->and_where_close();
-        $organizatorsObj = $query->get();
+        $organizators_obj = $query->get();
 
         $organizators['organizators'] = array();
         $i = 0;
 
         // get username for each organizator
-        foreach($organizatorsObj as $o) {
+        foreach($organizators_obj as $o)
+        {
             $query = Model_Orm_User::query()->where('user_id', $o->user_id);
             $organizator = $query->get_one();
             $organizators['organizators'][$i]['id'] = $organizator->user_id;
             $organizators['organizators'][$i]['username'] = $organizator->username;
 
             // check if current user is an organizator for current event
-            if ($organizator->user_id == $userId) {
-                $organizatorAccess = true;
-            }
+            $organizator->user_id == $user_id and $organizator_access = true;
             $i++;
         }
 
@@ -116,118 +102,142 @@ class Controller_Event extends Controller_Public
         $this->template->content = View::forge('event/view');
         $this->template->content->set('event', $event);
         $this->template->content->set('organizators', $organizators);
-        $this->template->content->set('organizatorAccess', $organizatorAccess);
-        $this->template->content->set('authorAccess', $authorAccess);
+        $this->template->content->set('organizator_access', $organizator_access);
+        $this->template->content->set('author_access', $author_access);
     }
 
     /**
      * Validates creation form and creates new event
      */
-    public function action_create() {
+    public function action_create()
+    {
         // check if user has accesss to create new event
-        if (Auth::has_access('event.create')) {
-            if (Input::method() == 'POST') {
+        if (Auth::has_access('event.create'))
+        {
+            if (Input::method() == 'POST')
+            {
                 // form submited, validate it
                 $is_error = false;
                 $errors = array();
                 $event = array();
 
                 // check type set
-                if (Input::post('type') == 'private') {
+                if (Input::post('type') == 'private')
+                {
                     $event['type'] = 'private';
                 }
-                else {
+                else
+                {
                     $event['type'] = 'public';
                 }
 
                 // check if title set
-                if (!Input::post('title')) {
+                if ( ! Input::post('title'))
+                {
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma nosaukumu!';
                 }
-                else {
+                else
+                {
                     $event['title'] = Input::post('title');
                 }
 
                 // check if link title is set
-                if (Input::post('link_title')) {
-                    if(!preg_match('/^[a-zA-Z0-9]+$/', Input::post('link_title')) == 1) {
+                if (Input::post('link_title'))
+                {
+                    if ( ! preg_match('/^[a-zA-Z0-9]+$/', Input::post('link_title')) == 1)
+                    {
                         // string contained illegal characters
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma saites nosaukumu, tas drīkst saturēt tikai burtus bez mīkstinājuma zīmēm un ciparus!';
                     }
-                    else {
+                    else
+                    {
                         // check if link doesn't already exist in system
-                        $link = Model_Orm_Event::find('all', array(
-                            'where' => array(
-                                array('link_title', Input::post('link_title')),
-                            ),
-                        ));
-                        if (empty($link)) {
-                            $event['link_title'] = Input::post('link_title');
+                        $query = Model_Orm_Event::query()->where('event_id', Input::post('link_title'));
+                        $event_obj = $query->get_one();
+
+                        if (empty($event_obj))
+                        {
+                            $event['event_id'] = Input::post('link_title');
                         }
-                        else {
+                        else
+                        {
                             $is_error = true;
                             $errors[] = 'Saites nosaukums jau aizņemts, izvēlies citu!';
                         }
                     }
                 }
-                else {
+                else
+                {
                     // link title not set
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma saites nosaukumu!';
                 }
 
                 // check if dexcription set
-                if (!Input::post('desc')) {
+                if ( ! Input::post('desc'))
+                {
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma aprakstu!';
                 }
-                else {
+                else
+                {
                     $event['description'] = Input::post('desc');
                 }
 
                 // check if location set
-                if (!Input::post('location')) {
+                if ( ! Input::post('location'))
+                {
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma atrašanās vietu!';
                 }
-                else {
+                else
+                {
                     $event['location'] = Input::post('location');
                 }
 
                 // check if date set
-                if (!Input::post('date')) {
+                if ( ! Input::post('date'))
+                {
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma norises datumu!';
                 }
-                else {
+                else
+                {
                     $event['date'] = Input::post('date');
                 }
 
-                $partMinValid = false;
+                $part_min_valid = false;
                 // check if participants min set
-                if (Input::post('part_min')) {
+                if (Input::post('part_min'))
+                {
                     // min participants set, check if its numeric
-                    if (is_numeric(Input::post('part_min'))) {
+                    if (is_numeric(Input::post('part_min')))
+                    {
                         // min participants is numeric, check if its not real number
-                        if (strpos(Input::post('part_min'), '.') !== false) {
+                        if (strpos(Input::post('part_min'), '.') !== false)
+                        {
                             $is_error = true;
                             $errors[] = 'Minimālajam dalībnieku skaitam jābūt veselam skaitlim!';
                         }
-                        else {
+                        else
+                        {
                             // min participants is integer, check if positive
-                            if (Input::post('part_min') <= 0) {
+                            if (Input::post('part_min') <= 0)
+                            {
                                 $is_error = true;
                                 $errors[] = 'Minimālajam dalībnieku skaitam jābūt pozitīvam skaitlim!';
                             }
-                            else {
+                            else
+                            {
                                 $event['participants_min'] = Input::post('part_min');
-                                $partMinValid = true;
+                                $part_min_valid = true;
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // min participants wasn't numeric
                         $is_error = true;
                         $errors[] = 'Minimālajam dalībnieku skaitam jābūt skaitlim!';
@@ -235,41 +245,52 @@ class Controller_Event extends Controller_Public
                 }
 
                 // check if participants max set
-                if (Input::post('part_max')) {
+                if (Input::post('part_max'))
+                {
                     // max participants set, check if its numeric
-                    if (is_numeric(Input::post('part_max'))) {
+                    if (is_numeric(Input::post('part_max')))
+                    {
                         // max participants is numeric, check if its not real number
-                        if (strpos(Input::post('part_max'), '.') !== false) {
+                        if (strpos(Input::post('part_max'), '.') !== false)
+                        {
                             $is_error = true;
                             $errors[] = 'Maksimālajam dalībnieku skaitam jābūt veselam skaitlim!';
                         }
-                        else {
+                        else
+                        {
                             // min participants is integer, check if positive
-                            if (Input::post('part_max') > 0) {
+                            if (Input::post('part_max') > 0)
+                            {
                                 // min participants is positive integer
                                 // check if max bigger than min participants if both set
-                                if ($partMinValid && Input::post('part_max') >= Input::post('part_min')) {
+                                if ($part_min_valid and Input::post('part_max') >= Input::post('part_min'))
+                                {
                                     // values are correct, check if not equal
-                                    if (Input::post('part_max') == Input::post('part_min')) {
+                                    if (Input::post('part_max') == Input::post('part_min'))
+                                    {
                                         $is_error = true;
                                         $errors[] = 'Maksimālā un minimālā dalībnieku skaita vērtības sakrīt!';
                                     }
-                                    else {
+                                    else
+                                    {
                                         $event['participants_max'] = Input::post('part_max');
                                     }
                                 }
-                                else {
+                                else
+                                {
                                     $is_error = true;
                                     $errors[] = 'Minimālajam dalībnieku ir jābūt mazākam par maksimālo dalībnieku skaitu!';
                                 }
                             }
-                            else {
+                            else
+                            {
                                 $is_error = true;
                                 $errors[] = 'Minimālajam dalībnieku skaitam jābūt pozitīvam skaitlim!';
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // max participants wasn't numeric
                         $is_error = true;
                         $errors[] = 'Maksimālajam dalībnieku skaitam jābūt skaitlim!';
@@ -277,82 +298,87 @@ class Controller_Event extends Controller_Public
                 }
 
                 // check if entry fee set
-                if (Input::post('entry_fee')) {
+                if (Input::post('entry_fee'))
+                {
                     // entry fee set, check if its positive number
-                    if (!is_numeric(Input::post('entry_fee')) && Input::post('entry_fee') <= 0) {
+                    if ( ! is_numeric(Input::post('entry_fee')) and Input::post('entry_fee') <= 0)
+                    {
                         $is_error = true;
                         $errors[] = 'Ieejas maksai jābūt pozitīvam skaitlim!';
                     }
-                    else {
+                    else
+                    {
                         $event['entry_fee'] = Input::post('entry_fee');
                     }
                 }
 
                 // check if takeway items set
-                if (Input::post('takeaway')) {
-                    $event['takeaway'] = Input::post('takeaway');
-                }
+                Input::post('takeaway') and $event['takeaway'] = Input::post('takeaway');
 
                 // check if dress code set
-                if (Input::post('dress_code')) {
-                    $event['dress_code'] = Input::post('dress_code');
-                }
+                Input::post('dress_code') and $event['dress_code'] = Input::post('dress_code');
 
                 // check if assistants set
-                if (Input::post('assistants')) {
-                    $event['assistants'] = Input::post('assistants');
-                }
+                Input::post('assistants') and $event['assistants'] = Input::post('assistants');
 
-                if (!$is_error) {
+                if ( ! $is_error)
+                {
                     // form valid, try to save it
-                    $newEvent = Model_Orm_Event::forge($event);
+                    $new_event = Model_Orm_Event::forge($event);
 
-                    if ($newEvent && $newEvent->save()) {
+                    if ($new_event and $new_event->save())
+                    {
                         // save event organizator
-                        $userId = Auth::instance()->get_user_id();
+                        $user_id = Auth::instance()->get_user_id();
                         $organizator = array(
-                            'event_id'  => $newEvent->event_id,
-                            'user_id'   => $userId[1],
+                            'event_id'  => $new_event->event_id,
+                            'user_id'   => $user_id[1],
                             'is_author' => 1
                         );
-                        $newOrganizator = Model_Orm_Organizator::forge($organizator);
+                        $new_organizator = Model_Orm_Organizator::forge($organizator);
 
-                        if ($newOrganizator && $newOrganizator->save()) {
+                        if ($new_organizator and $new_organizator->save())
+                        {
                             // organizator successfully added
-                            Session::set_flash('success', 'Pasākums "' . $newEvent->title . '" veiksmīgi izveidots.');
-                            Response::redirect('event/view/' . $event['link_title']);
+                            Session::set_flash('success', 'Pasākums "'.$new_event->title.'" veiksmīgi izveidots.');
+                            Response::redirect('event/view/'.$event['event_id']);
                         }
-                        else {
+                        else
+                        {
                             // something wen't wrong with adding organizator
                             Session::set_flash('errors', 'Kaut kas nogāja greizi ar pasākuma autoru, mēģini vēlreiz!');
                             $this->template->page_title = 'Izveido pasākumu!';
                             $this->template->content = View::forge('event/create');
-                            $this->template->content->formTitle = 'Izveido jaunu pasākumu!';
+                            $this->template->content->form_title = 'Izveido jaunu pasākumu!';
                         }
                     }
-                    else {
+                    else
+                    {
                         Session::set_flash('errors', 'Piedod, bet kaut kas nogāja greizi, mēģini vēlreiz!');
                         $this->template->page_title = 'Izveido pasākumu!';
                         $this->template->content = View::forge('event/create');
-                        $this->template->content->formTitle = 'Izveido jaunu pasākumu!';
+                        $this->template->content->form_title = 'Izveido jaunu pasākumu!';
                     }
                 }
-                else {
+                else
+                {
                     // some error in validation, render registeration form with errors
                     Session::set_flash('errors', $errors);
                     $this->template->page_title = 'Izveido pasākumu!';
                     $this->template->content = View::forge('event/create');
-                    $this->template->content->formTitle = 'Izveido jaunu pasākumu!';
+                    $this->template->content->form_title = 'Izveido jaunu pasākumu!';
                 }
             }
-            else {
+            else
+            {
                 // No form submited, render creation form
                 $this->template->page_title = 'Izveido pasākumu!';
                 $this->template->content = View::forge('event/create');
-                $this->template->content->formTitle = 'Izveido jaunu pasākumu!';
+                $this->template->content->form_title = 'Izveido jaunu pasākumu!';
             }
         }
-        else {
+        else
+        {
             // user doesn't have access to creeating new event
             Response::redirect('/');
         }
@@ -361,337 +387,439 @@ class Controller_Event extends Controller_Public
     /**
      * Add given organizator to given event
      */
-    public function action_add_organizator() {
+    public function action_add_organizator()
+    {
         // check if user has access to adding orginazator
-        $userId = Auth::instance()->get_user_id();
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
         $query = Model_Orm_Organizator::query()
             ->where('event_id', Input::post('event_id'))
             ->and_where_open()
-                 ->where('user_id', $userId[1])
+                 ->where('user_id', $user_id)
             ->and_where_close();
+        $has_access = $query->get_one();
 
-        $hasAccess = $query->get_one();
-
-        if (!is_null($hasAccess)) {
-            if (Input::method() == 'POST') {
-                if (Input::post('organizator')) {
+        if ( ! is_null($has_access))
+        {
+            if (Input::method() == 'POST')
+            {
+                if (Input::post('organizator'))
+                {
                     // check if user exists
                     $query = Model_Orm_User::query()->where('username', Input::post('organizator'));
-                    $user = $query->get_one();
-                    if (!is_null($user)) {
+                    $user_obj = $query->get_one();
+
+                    if ( ! is_null($user_obj))
+                    {
                         // check if it isn't already an organizator for this event
                         $query = Model_Orm_Organizator::query()
                             ->where('event_id', Input::post('event_id'))
                             ->and_where_open()
-                                ->where('user_id', $user->user_id)
+                                ->where('user_id', $user_obj->user_id)
                             ->and_where_close();
-                        $organizatorObj = $query->get_one();
-                        if (is_null($organizatorObj)) {
-                            // give this user organizer status
-                            $organizator = array(
-                                'event_id'  => Input::post('event_id'),
-                                'user_id'   => $user->user_id,
-                                'is_author' => 0
-                            );
-                            $newOrganizator = Model_Orm_Organizator::forge($organizator);
+                        $organizator_obj = $query->get_one();
 
-                            if ($newOrganizator && $newOrganizator->save()) {
-                                // users is now organizer
-                                Session::set_flash('success', $user->username . ' veiksmīgi pievienots kā organizators.');
-                                Response::redirect('event/view/' . Input::post('link_title'));
+                        if (is_null($organizator_obj))
+                        {
+                            // create new invite for given user
+                            $invite = array (
+                                'sender_id'     => $user_id,
+                                'recipient_id'  => $user_obj->user_id,
+                                'event_id'    => Input::post('event_id')
+                            );
+
+                            $new_invite = Model_Orm_Invite::forge($invite);
+
+                            if ($new_invite and $new_invite->save())
+                            {
+                                // new invite created
+                                Session::set_flash('success', 'Lietotājam '.$user_obj->username.' veiksmīgi nosūtīts uzaicinājums.');
+                                Response::redirect('event/view/'.Input::post('event_id'));
                             }
                         }
-                        else {
+                        else
+                        {
                             // user is already organizator for this event
                             $error[] = 'Piedod, bet šis lietotājs jau ir organizators šim pasākumam.';
                             Session::set_flash('errors', $error);
                         }
                     }
-                    else {
+                    else
+                    {
                         // user doesn't exists
                         $error[] = 'Piedod, bet šis lietotājs neekistē.';
                         Session::set_flash('errors', $error);
                     }
                 }
-                else {
+                else
+                {
                     // no username specified
                     $error[] = 'Norādi lietotājvārdu, kuru vēlies pievienot.';
                     Session::set_flash('errors', $error);
                 }
             }
-            Response::redirect('event/view/' . Input::post('link_title'));
+            Response::redirect('event/view/'.Input::post('event_id'));
         }
-        else {
+        else
+        {
             // user doesn't have access to adding organizator
             $error[] = 'Piedod, bet tev nav pieejas pievienot organizatoru šim pasākumam.';
             Session::set_flash('errors', $error);
-            Response::redirect('event/view/' . Input::post('link_title'));
+            Response::redirect('event/view/'.Input::post('event_id'));
+        }
+    }
+
+    public function action_accept_invite($event_id = null)
+    {
+        is_null($event_id) and Response::redirect('/');
+
+        // check if current user has invite for given event
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
+
+        $query = Model_Orm_Invite::query()
+            ->where('event_id', $event_id)
+            ->and_where_open()
+                ->where('recipient_id', $user_id)
+            ->and_where_close();
+        $invite_obj = $query->get_one();
+
+        // if invite found, make user organizator for this event
+        if ( ! empty($invite_obj))
+        {
+            // give this user organizer status
+            $organizator = array(
+                'event_id'  => $event_id,
+                'user_id'   => $user_id,
+                'is_author' => 0
+            );
+            $new_organizator = Model_Orm_Organizator::forge($organizator);
+
+            if ($new_organizator and $new_organizator->save())
+            {
+                // users is now organizer, delete accepted invite
+                $query->delete();
+
+                Session::set_flash('success', 'Apsveicu, tu esi veiksmīgi pievienots kā organizators.');
+                Response::redirect('event/view/'.$event_id);
+            }
+        }
+        else
+        {
+            // user has no invites
+            $error[] = 'Piedod, bet tev nav neviena uzaicinājuma.';
+            Session::set_flash('errors', $error);
+            Response::redirect('user/view');
         }
     }
 
     /**
      * Delete give organizator form given event
      *
-     * @param string $linkTitle title link of event to which needs to be redirected
-     * @param integer $eventId ID of event form which is needed to delete given user
-     * @param integer $userId ID of user needed to be deleted
+     * @param string $event_id title link of event to which needs to be redirected
+     * @param integer $event_id ID of event form which is needed to delete given user
+     * @param integer $user_id ID of user needed to be deleted
      */
-    public function action_delete_organizator($linkTitle = '', $eventId = '', $userId = '') {
+    public function action_delete_organizator($event_id = null, $user_id = null)
+    {
         // if user has access to delete user, delete it
-        $curUserId = Auth::instance()->get_user_id();
+        $cur_user_id = Auth::instance()->get_user_id();
         $query = Model_Orm_Organizator::query()
             ->where('event_id', Input::post('event_id'))
                  ->and_where_open()
-                 ->where('user_id', $curUserId[1])
+                 ->where('user_id', $cur_user_id[1])
             ->and_where_close();
-        $hasAccess = $query->get_one();
+        $has_access = $query->get_one();
 
-        if (!is_null($hasAccess)) {
-            $organizatorModel = Model_Orm_Organizator::query()
-                ->where('event_id', $eventId)
+        if ( ! is_null($has_access))
+        {
+            $organizator_model = Model_Orm_Organizator::query()
+                ->where('event_id', $event_id)
                 ->and_where_open()
-                    ->where('user_id', $userId)
+                    ->where('user_id', $user_id)
                 ->and_where_close();
-            $organizator = $organizatorModel->get_one();
-            if ($organizator->is_author == 1) {
+            $organizator = $organizator_model->get_one();
+            if ($organizator->is_author == 1)
+            {
                 // can't delete events author
                 $error[] = 'Nedrīkst dzēst pasākuma autoru!';
                 Session::set_flash('errors', $error);
-                Response::redirect('event/view/' . $linkTitle);
+                Response::redirect('event/view/'.$event_id);
             }
-            else {
+            else
+            {
                 // isn't events author, delte it
                 $organizator->delete();
 
                 Session::set_flash('success', 'Lietotājs veiksmīgi izdzēsts kā organizators.');
-                Response::redirect('event/view/' . $linkTitle);
+                Response::redirect('event/view/'.$event_id);
             }
         }
-        else {
+        else
+        {
             $error[] = 'Tev nav pieejas dzēst šo lietotāju kā organizatoru.';
             Session::set_flash('errors', $error);
-            Response::redirect('event/view/' . $linkTitle);
+            Response::redirect('event/view/'.$event_id);
         }
     }
 
     /**
      * Edit atributes of given event
      *
-     * @param integer $linkTitle is link to were redirect
-     * @param integer $eventId is ID of event needed to be edited
+     * @param integer $event_id is link to were redirect
+     * @param integer $event_id is ID of event needed to be edited
      */
-    public function action_edit_attribute($linkTitle = '', $eventId = '') {
+    public function action_edit_attribute($event_id = null, $event_id = null)
+    {
         // check if user has access to editing event
-        $UserId = Auth::instance()->get_user_id();
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
         $query = Model_Orm_Organizator::query()
-            ->where('event_id', $eventId)
+            ->where('event_id', $event_id)
                  ->and_where_open()
-                 ->where('user_id', $UserId[1])
+                 ->where('user_id', $user_id)
             ->and_where_close();
-        $hasAccess = $query->get_one();
+        $has_access = $query->get_one();
 
-        if (!is_null($hasAccess)) {
+        if ( ! is_null($has_access))
+        {
             // user has acess to edit this event, check if its not blocked
-            if (Auth::has_access('event.edit_attribute')) {
-                if (Input::method() == 'POST') {
+            if (Auth::has_access('event.edit_attribute'))
+            {
+                if (Input::method() == 'POST')
+                {
                     // get existing attribute values
-                    $eventModel = Model_Orm_Event::find($eventId);
+                    $event_model = Model_Orm_Event::find($event_id);
                     // form submited, validate it
                     $is_error = false;
                     $errors = array();
                     $event = array();
 
                     // check if title set
-                    if (Input::post('title')) {
+                    if (Input::post('title'))
+                    {
                         // check if it have changed
-                        if (Input::post('title') != $eventModel->title) {
-                            $event['title'] = Input::post('title');
-                        }
+                        Input::post('title') != $event_model->title and $event['title'] = Input::post('title');
                     }
-                    else {
+                    else
+                    {
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma nosaukumu!';
                     }
 
                     // check if link title is set
-                    if (Input::post('link_title')) {
+                    if (Input::post('link_title'))
+                    {
                         // check if it have changed
-                        if (Input::post('link_title') != $eventModel->link_title) {
+                        if (Input::post('link_title') != $event_model->id)
+                        {
                             // string has changed, validate it
-                            if(!preg_match('/^[a-zA-Z0-9]+$/', Input::post('link_title')) == 1) {
+                            if( ! preg_match('/^[a-zA-Z0-9]+$/', Input::post('link_title')) == 1)
+                            {
                                 // string contained illegal characters
                                 $is_error = true;
                                 $errors[] = 'Lūdzu ievadiet pasākuma saites nosaukumu, tas drīkst saturēt tikai burtus bez mīkstinājuma zīmēm un ciparus!';
                             }
-                            else {
+                            else
+                            {
                                 // check if link doesn't already exist in system
-                                $link = Model_Orm_Event::find('all', array(
-                                    'where' => array(
-                                        array('link_title', Input::post('link_title')),
-                                    ),
-                                ));
-                                if (empty($link)) {
-                                    $event['link_title'] = Input::post('link_title');
+                                $query = Model_Orm_Event::query()->where('event_id', Input::post('link_title'));
+                                $event_obj = $query->get_one();
+
+                                if (empty($event_obj))
+                                {
+                                    $event['event_id'] = Input::post('link_title');
                                 }
-                                else {
+                                else
+                                {
                                     $is_error = true;
                                     $errors[] = 'Saites nosaukums jau aizņemts, izvēlies citu!';
                                 }
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // link title not set
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma saites nosaukumu!';
                     }
 
                     // check if dexcription set
-                    if (Input::post('desc')) {
+                    if (Input::post('desc'))
+                    {
                         // check if it have changed
-                        if (Input::post('desc') != $eventModel->description) {
-                            $event['description'] = Input::post('desc');
-                        }
+                        Input::post('desc') != $event_model->description and $event['description'] = Input::post('desc');
                     }
-                    else {
+                    else
+                    {
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma aprakstu!';
                     }
 
                     // check if location set
-                    if (Input::post('location')) {
+                    if (Input::post('location'))
+                    {
                         // check if it have changed
-                        if (Input::post('location') != $eventModel->location) {
-                            $event['location'] = Input::post('location');
-                        }
+                        Input::post('location') != $event_model->location and $event['location'] = Input::post('location');
                     }
-                    else {
+                    else
+                    {
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma atrašanās vietu!';
                     }
 
                     // check if date set
-                    if (Input::post('date')) {
+                    if (Input::post('date'))
+                    {
                         // check if it have changed
-                        if (Input::post('date') != $eventModel->date) {
-                            $event['date'] = Input::post('date');
-                        }
+                        Input::post('date') != $event_model->date and $event['date'] = Input::post('date');
                     }
-                    else {
+                    else
+                    {
                         $is_error = true;
                         $errors[] = 'Lūdzu ievadiet pasākuma norises datumu!';
                     }
 
-                    $partMinValid = false;
+                    $part_min_valid = false;
                     // check if participants min set
-                    if (Input::post('part_min')) {
+                    if (Input::post('part_min'))
+                    {
                         // check if it have changed
-                        if (Input::post('part_min') != $eventModel->participants_min) {
+                        if (Input::post('part_min') != $event_model->participants_min)
+                        {
                             // string has changed, check if its numeric
-                            if (is_numeric(Input::post('part_min'))) {
+                            if (is_numeric(Input::post('part_min')))
+                            {
                                 // min participants is numeric, check if its not real number
-                                if (strpos(Input::post('part_min'), '.') != false) {
+                                if (strpos(Input::post('part_min'), '.') != false)
+                                {
                                     $is_error = true;
                                     $errors[] = 'Minimālajam dalībnieku skaitam jābūt veselam skaitlim!';
                                 }
-                                else {
+                                else
+                                {
                                     // min participants is integer, check if positive
-                                    if (Input::post('part_min') <= 0) {
+                                    if (Input::post('part_min') <= 0)
+                                    {
                                         $is_error = true;
                                         $errors[] = 'Minimālajam dalībnieku skaitam jābūt pozitīvam skaitlim!';
                                     }
-                                    else {
+                                    else
+                                    {
                                         $event['participants_min'] = Input::post('part_min');
-                                        $partMinValid = true;
-                                        $partMin = Input::post('part_min');
+                                        $part_min_valid = true;
+                                        $part_min = Input::post('part_min');
                                     }
                                 }
                             }
-                            else {
+                            else
+                            {
                                 // min participants wasn't numeric
                                 $is_error = true;
                                 $errors[] = 'Minimālajam dalībnieku skaitam jābūt skaitlim!';
                             }
                         }
-                        else {
+                        else
+                        {
                             // string hasn't changed, but still it exists
-                            $partMinValid = true;
-                            $partMin = $eventModel->participants_min;
+                            $part_min_valid = true;
+                            $part_min = $event_model->participants_min;
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['participants_min'] = null;
                     }
 
                     // check if participants max set
-                    if (Input::post('part_max')) {
+                    if (Input::post('part_max'))
+                    {
                         // check if it have changed
-                        if (Input::post('part_max') != $eventModel->participants_max) {
+                        if (Input::post('part_max') != $event_model->participants_max)
+                        {
                             // string has changed, check if its numeric
-                            if (is_numeric(Input::post('part_max'))) {
+                            if (is_numeric(Input::post('part_max')))
+                            {
                                 // max participants is numeric, check if its not real number
-                                if (strpos(Input::post('part_max'), '.') != false) {
+                                if (strpos(Input::post('part_max'), '.') != false)
+                                {
                                     $is_error = true;
                                     $errors[] = 'Maksimālajam dalībnieku skaitam jābūt veselam skaitlim!';
                                 }
-                                else {
+                                else
+                                {
                                     // min participants is integer, check if positive
-                                    if (Input::post('part_max') > 0) {
+                                    if (Input::post('part_max') > 0)
+                                    {
                                         // min participants is positive integer
                                         // check if min value set
-                                        if ($partMinValid) {
+                                        if ($part_min_valid)
+                                        {
                                             // check if max bigger than min participants
-                                            if (Input::post('part_max') >= $partMin) {
+                                            if (Input::post('part_max') >= $part_min)
+                                            {
                                                 // values are correct, check if not equal
-                                                if (Input::post('part_max') == $partMin) {
+                                                if (Input::post('part_max') == $part_min)
+                                                {
                                                     $is_error = true;
                                                     $errors[] = 'Maksimālā un minimālā dalībnieku skaita vērtības sakrīt!';
                                                 }
-                                                else {
+                                                else
+                                                {
                                                     $event['participants_max'] = Input::post('part_max');
                                                 }
                                             }
-                                            else {
+                                            else
+                                            {
                                                 $is_error = true;
                                                 $errors[] = 'Minimālajam dalībnieku ir jābūt mazākam par maksimālo dalībnieku skaitu!';
                                             }
                                         }
-                                        else {
+                                        else
+                                        {
                                             // min participants not set, set max participants
                                             $event['participants_max'] = Input::post('part_max');
                                         }
 
                                     }
-                                    else {
+                                    else
+                                    {
                                         $is_error = true;
                                         $errors[] = 'Minimālajam dalībnieku skaitam jābūt pozitīvam skaitlim!';
                                     }
                                 }
                             }
-                            else {
+                            else
+                            {
                                 // max participants wasn't numeric
                                 $is_error = true;
                                 $errors[] = 'Maksimālajam dalībnieku skaitam jābūt skaitlim!';
                             }
                         }
-                        else {
+                        else
+                        {
                             // max participants hasn't changed, check if possible
                             // new min participants value set and cnonflicts with old max participatns value
-                            if (Input::post('part_min') <= $eventModel->participants_max) {
+                            if (Input::post('part_min') <= $event_model->participants_max)
+                            {
                                 // values are correct, check if not equal
-                                if ($eventModel->participants_max == $partMin) {
+                                if ($event_model->participants_max == $part_min)
+                                {
                                     $is_error = true;
                                     $errors[] = 'Maksimālā un minimālā dalībnieku skaita vērtības sakrīt!';
                                 }
                             }
-                            else {
+                            else
+                            {
                                 $is_error = true;
                                 $errors[] = 'Minimālajam dalībnieku ir jābūt mazākam par maksimālo dalībnieku skaitu!';
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['participants_max'] = null;
                     }
@@ -699,132 +827,140 @@ class Controller_Event extends Controller_Public
 
 
                     // check if entry fee set
-                    if (Input::post('entry_fee')) {
+                    if (Input::post('entry_fee'))
+                    {
                         // check if it have changed
-                        if (Input::post('entry_fee') != $eventModel->entry_fee) {
+                        if (Input::post('entry_fee') != $event_model->entry_fee)
+                        {
                             // entry fee set, check if its positive number
-                            if (!is_numeric(Input::post('entry_fee')) && Input::post('entry_fee') <= 0) {
+                            if ( ! is_numeric(Input::post('entry_fee')) and Input::post('entry_fee') <= 0)
+                            {
                                 $is_error = true;
                                 $errors[] = 'Ieejas maksai jābūt pozitīvam skaitlim!';
                             }
-                            else {
+                            else
+                            {
                                 $event['entry_fee'] = Input::post('entry_fee');
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['entry_fee'] = null;
                     }
 
                     // check if takeway items set
-                    if (Input::post('takeaway')) {
+                    if (Input::post('takeaway'))
+                    {
                         // check if it have changed
-                        if (Input::post('takeaway') != $eventModel->takeaway) {
+                        if (Input::post('takeaway') != $event_model->takeaway)
+                        {
                             $event['takeaway'] = Input::post('takeaway');
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['takeaway'] = null;
                     }
 
                     // check if dress code set
-                    if (Input::post('dress_code')) {
+                    if (Input::post('dress_code'))
+                    {
                         // check if it have changed
-                        if (Input::post('dress_code') != $eventModel->dress_code) {
+                        if (Input::post('dress_code') != $event_model->dress_code)
+                        {
                             $event['dress_code'] = Input::post('dress_code');
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['dress_code'] = null;
                     }
 
                     // check if assistants set
-                    if (Input::post('assistants')) {
+                    if (Input::post('assistants'))
+                    {
                         // check if it have changed
-                        if (Input::post('assistants') != $eventModel->assistants) {
+                        if (Input::post('assistants') != $event_model->assistants)
+                        {
                             $event['assistants'] = Input::post('assistants');
                         }
                     }
-                    else {
+                    else
+                    {
                         // if not set, delete previous value
                         $event['assistants'] = null;
                     }
 
-                    if (!$is_error) {
+                    if ( ! $is_error)
+                    {
                         // form valid, try to save it
-                        $eventModel->set($event);
+                        $event_model->set($event);
 
-                        if ($eventModel && $eventModel->save()) {
+                        if ($event_model and $event_model->save())
+                        {
                             // event successfully edited and saved
-                            Session::set_flash('success', 'Pasākums "' . $eventModel->title . '" veiksmīgi izmainīts.');
-                            Response::redirect('event/view/' . $eventModel->link_title);
+                            Session::set_flash('success', 'Pasākums "'.$event_model->title.'" veiksmīgi izmainīts.');
+                            Response::redirect('event/view/'.$event_model->event_id);
                         }
-                        else {
+                        else
+                        {
                             Session::set_flash('errors', 'Piedod, bet kaut kas nogāja greizi, mēģini vēlreiz!');
                             $this->template->page_title = 'Izveido pasākumu!';
                             $this->template->content = View::forge('event/create');
                         }
                     }
-                    else {
+                    else
+                    {
                         // some error in validation, render editing form with errors
                         Session::set_flash('errors', $errors);
                         $this->template->page_title = 'Izveido pasākumu!';
                         $this->template->content = View::forge('event/create');
                     }
                 }
-                else {
+                else
+                {
                     // No form submited, render edit form with existing values
-                    $query = Model_Orm_Event::query()->where('link_title', $linkTitle);
-                    $eventObj = $query->get_one();
+                    $query = Model_Orm_Event::query()->where('event_id', $event_id);
+                    $event_obj = $query->get_one();
 
                     // save mandetory model atributes in post array
-                    $_POST['event_id'] = $eventObj->event_id;
-                    $_POST['title'] = $eventObj->title;
-                    $_POST['link_title'] = $eventObj->link_title;
-                    $_POST['desc'] = $eventObj->description;
-                    $_POST['location'] = $eventObj->location;
-                    $_POST['date'] = $eventObj->date;
+                    $_POST['title'] = $event_obj->title;
+                    $_POST['link_title'] = $event_obj->event_id;
+                    $_POST['desc'] = $event_obj->description;
+                    $_POST['location'] = $event_obj->location;
+                    $_POST['date'] = $event_obj->date;
 
                     // check for additional attributes
-                    if (!is_null($eventObj->participants_min)) {
-                        $_POST['part_min'] = $eventObj->participants_min;
-                    }
-                    if (!is_null($eventObj->participants_max)) {
-                        $_POST['part_max'] = $eventObj->participants_max;
-                    }
-                    if (!is_null($eventObj->entry_fee)) {
-                        $_POST['entry_fee'] = $eventObj->entry_fee;
-                    }
-                    if (!is_null($eventObj->takeaway)) {
-                        $_POST['takeaway'] = $eventObj->takeaway;
-                    }
-                    if (!is_null($eventObj->dress_code)) {
-                        $_POST['dress_code'] = $eventObj->dress_code;
-                    }
-                    if (!is_null($eventObj->assistants)) {
-                        $_POST['assistants'] = $eventObj->assistants;
-                    }
+                    is_null($event_obj->participants_min) or $_POST['part_min'] = $event_obj->participants_min;
+                    is_null($event_obj->participants_max) or $_POST['part_max'] = $event_obj->participants_max;
+                    is_null($event_obj->entry_fee) or $_POST['entry_fee'] = $event_obj->entry_fee;
+                    is_null($event_obj->takeaway) or $_POST['takeaway'] = $event_obj->takeaway;
+                    is_null($event_obj->dress_code) or $_POST['dress_code'] = $event_obj->dress_code;
+                    is_null($event_obj->assistants) or $_POST['assistants'] = $event_obj->assistants;
 
-                    $this->template->page_title = 'Izlabo ' . $eventObj->title;
+                    $this->template->page_title = 'Izlabo '.$event_obj->title;
                     $this->template->content = View::forge('event/edit');
-                    $this->template->content->formTitle = 'Izlabo ' . $eventObj->title;
+                    $this->template->content->form_title = 'Izlabo '.$event_obj->title;
                 }
             }
-            else {
+            else
+            {
                 // user is blocked and can't edit event
                 $error[] = 'Tu esi bloķēts un tev nav pieejas labot šo pasākumu!';
                 Session::set_flash('errors', $error);
-                Response::redirect('event/view/' . $linkTitle);
+                Response::redirect('event/view/'.$event_id);
             }
         }
-        else {
+        else
+        {
             // user doesn't have access to edit this event
             $error[] = 'Tev nav pieejas labot šo pasākumu!';
             Session::set_flash('errors', $error);
-            Response::redirect('event/view/' . $linkTitle);
+            Response::redirect('event/view/'.$event_id);
         }
     }
 }

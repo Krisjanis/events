@@ -1,6 +1,6 @@
 <?php
 echo Form::open(array('class' => 'form-horizontal', 'id' => 'event'));
-echo Form::fieldset_open(null, $formTitle);
+echo Form::fieldset_open(null, $form_title);
 
 // Check if there is no error in form submition
 $errors = Session::get_flash('errors');
@@ -10,7 +10,7 @@ if (isset($errors)) {
     <h4>Kļūda!</h4>
     <?php
         foreach ($errors as $error) {
-            echo $error . '<br />';
+            echo $error.'<br />';
         }
     ?>
 </div>
