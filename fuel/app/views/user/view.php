@@ -1,9 +1,27 @@
 <h1><?php echo $user['username']; ?> profils</h1>
 <div class="user-profile">
+    <?php if ($onwer_access) : ?>
+        <div class="user-profile-info clearfix">
+            <p class="definition pull-left">Profila darbības</p>
+            <div class="info pull-left">
+                <?php echo Html::anchor('user/delete/', '<span class="label label-important">Dzēst!</span>', array('onclick' => "return confirm('Vai tiešām vēlaties neatgriezeniski dzēst savu profilu?')")); ?>
+                <?php echo Html::anchor('user/edit/', '<span class="label label-warning">Labot!</span>'); ?>
+                <?php echo Html::anchor('user/change_password/', '<span class="label label-warning">Mainīt paroli!</span>'); ?>
+            </div>
+        </div>
+    <?php endif; ?>
     <div class="user-profile-info clearfix">
         <p class="definition pull-left">Vārds Uzvārds</p>
+        <?php if ( ! is_null($user['name']) and ! is_null($user['surname'])) : ?>
         <div class="info pull-left">
             <p><?php echo $user['name'].' '.$user['surname']; ?></p>
+        </div>
+        <?php endif; ?>
+    </div>
+    <div class="user-profile-info clearfix">
+        <p class="definition pull-left">E-pasts</p>
+        <div class="info pull-left">
+            <p><?php echo $user['email']; ?></p>
         </div>
     </div>
     <?php if (isset($invites)) : ?>

@@ -16,6 +16,7 @@ class Controller_User extends Controller_Public
      */
     public function action_view($user_id = null)
     {
+        $onwer_access = false;
         $auth = Auth::instance();
         $user_group_id = $auth->get_groups();
 
@@ -35,6 +36,7 @@ class Controller_User extends Controller_Public
                 // registerred user, view users own profile
                 $user_id = Auth::instance()->get_user_id();
                 $user_id = $user_id[1];
+                $onwer_access = true;
             }
         }
 
@@ -65,7 +67,9 @@ class Controller_User extends Controller_Public
 
         // user profile found, show it
         $user = array(
+            'id'        => $exist_username->user_id,
             'username'  => $exist_username->username,
+            'email'     => $exist_username->email,
             'name'      => $exist_username->name,
             'surname'   => $exist_username->surname
         );
@@ -135,6 +139,7 @@ class Controller_User extends Controller_Public
         $this->template->page_title = $exist_username->username.' profils';
         $this->template->content = View::forge('user/view');
         $this->template->content->set('user', $user);
+        $this->template->content->set('onwer_access', $onwer_access);
         empty($event_author) or $this->template->content->set('event_author', $event_author);
         empty($event_organizator) or $this->template->content->set('event_organizator', $event_organizator);
         empty($invites) or $this->template->content->set('invites', $invites);
@@ -169,20 +174,6 @@ class Controller_User extends Controller_Public
                 // Username wans't set
                 $is_error = true;
                 $errors[] = 'Lūdzu ievadiet lietotājvārdu!';
-            }
-
-            // Check if name set
-            if ( ! Input::post('name'))
-            {
-                $is_error = true;
-                $errors[] = 'Lūdzu ievadiet savu vārdu!';
-            }
-
-            // Check if surname set
-            if ( ! Input::post('surname'))
-            {
-                $is_error = true;
-                $errors[] = 'Lūdzu ievadiet savu uzvārdu!';
             }
 
             // Check if email set
@@ -253,12 +244,10 @@ class Controller_User extends Controller_Public
                     1
                 );
 
-                // Save name and surname for just created user
+                // Save id in 'id' field for fuelphp update bug
                 $user = Model_Orm_User::find($id);
                 $user->set(array(
-                    'id'         => $id,
-                    'name'       => Input::post('name'),
-                    'surname'    => Input::post('surname')
+                    'id'        => $id
                 ));
                 $user->save();
 
@@ -290,7 +279,7 @@ class Controller_User extends Controller_Public
      */
     public function action_login()
     {
-        // only show log in form is user is quest
+        // only show log in form if user is quest
         $auth = Auth::instance();
         $user_group = $auth->get_groups();
 
@@ -333,6 +322,273 @@ class Controller_User extends Controller_Public
         $auth = Auth::instance();
         $auth->logout();
         Response::redirect("/");
+    }
+
+    /**
+     * Deletes current user
+     */
+    public function action_delete()
+    {
+        // check if user is guest
+        $auth = Auth::instance();
+        $user_group_id = $auth->get_groups();
+
+        if ($user_group_id[0][1] != 0)
+        {
+            // user not guest, delete this profile
+            $username = $auth->get_screen_name();
+
+            if ($auth->delete_user($username))
+            {
+                //user deleted
+                Session::set_flash('success', 'Jūs veiksmīgi izdzēsāt savu profilu!');
+                Response::redirect('/');
+
+            }
+            else
+            {
+                // something wen't wrong
+                $errors[] = 'Lietotājvārds un vai parole nepareiza';
+                Session::set_flash('errors', $errors);
+                Response::redirect('/');
+            }
+        }
+    }
+
+    /**
+     * Change users name, surname and email or set name and surname if not set
+     */
+    public function action_edit()
+    {
+        $auth = Auth::instance();
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
+        $user = Model_Orm_User::find($user_id);
+
+        if (Input::method() == 'POST')
+        {
+            // Edit form submited, validate form
+            $is_error = false;
+            $errors = array();
+            $name_fields = array();
+
+            $name_set = false;
+            // Check if name set
+            if ( ! is_numeric(Input::post('name')))
+            {
+                // check if name field not left blank
+                if (Input::post('name') != '')
+                {
+                    $name_set = true;
+                    $name_fields['name'] = Input::post('name');
+                }
+            }
+            else
+            {
+                $is_error = true;
+                $errors[] = 'Vārds nevar būt skaitlis!';
+            }
+
+            // Check if surname set
+            if ( ! is_numeric(Input::post('surname')))
+            {
+                // check if surname field not left blank
+                if (Input::post('surname') != '')
+                {
+                    // check if name set
+                    if ($name_set)
+                    {
+                        $name_fields['surname'] = Input::post('surname');
+                    }
+                    else
+                    {
+                        // name not set, must set name and surname
+                        $is_error = true;
+                        $errors[] = 'Lūdzu ievadi arī vārdu!';
+                    }
+                }
+                else
+                {
+                    // check if name set
+                    if ($name_set)
+                    {
+                        // name set, must set surname too
+                        $is_error = true;
+                        $errors[] = 'Lūdzu ievadi arī uzvārdu!';
+                    }
+                    else
+                    {
+                        $name_fields['surname'] = Input::post('surname');
+                    }
+                }
+            }
+            else
+            {
+                $is_error = true;
+                $errors[] = 'Uzvārds nevar būt skaitlis!';
+            }
+
+            // Check if email set
+            if (Input::post('email') and Input::post('email') != '')
+            {
+                // Email set, check if its valid email format
+                if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                {
+                    // Email set, check if email changed
+                    if ($user->email != Input::post('email'))
+                    {
+                        // email has changed, check if its already used
+                        $exist_email = Model_Orm_User::find('all', array(
+                            'where' => array(
+                                array('email', Input::post('email'))
+                            ),
+                        ));
+
+                        if ( ! empty($exist_email))
+                        {
+                            // Email allready is used
+                            $is_error = true;
+                            $errors[] = 'E-pasts jau eksistē!';
+                        }
+                        else
+                        {
+                            $user_fields['email'] = Input::post('email');
+                        }
+                    }
+                }
+                else
+                {
+                    // Email isn't valid email format
+                    $is_error = true;
+                    $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                }
+
+            }
+
+            // If form valid create user
+            if ( ! $is_error)
+            {
+                // if email has changed, change it
+                if (isset($user_fields))
+                {
+                    // get users username
+                    $username = $auth->get_screen_name();
+
+                    $auth->update_user($user_fields, $username);
+                }
+
+                // if name or surname set
+                if (isset($name_fields['name']) or isset($name_fields['surname']))
+                {
+                    // Save name and surname for just created user
+                    $user->set($name_fields);
+                    $user->save();
+                }
+
+                Session::set_flash('success', 'Jūs veiksmīgi labojāt savu profilu!');
+                Response::redirect('/');
+            }
+            else
+            {
+                // Some error in validation, render registeration form with errors
+                Session::set_flash('errors', $errors);
+                $this->template->page_title = 'Izlabo savu profilu';
+                $this->template->content = View::forge('user/edit');
+            }
+        }
+        else
+        {
+            // No form submited
+            // Generate form view with existing values
+            $auth = Auth::instance();
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+            $user = Model_Orm_User::find($user_id);
+
+            $_POST['name'] = $user->name;
+            $_POST['surname'] = $user->surname;
+            $_POST['email'] = $user->email;
+            $this->template->page_title = 'Izlabo savu profilu';
+            $this->template->content = View::forge('user/edit');
+        }
+    }
+
+    public function action_change_password()
+    {
+        if (Input::method() == 'POST')
+        {
+            // Edit form submited, validate form
+            $is_error = false;
+            $errors = array();
+            $name_fields = array();
+
+            // Check if old passwords set
+            if ( ! Input::post('password_old'))
+            {
+                // Password wans't set
+                $is_error = true;
+                $errors[] = 'Lūdzu ievadiet savu tagadēja paroli!';
+            }
+
+            // Check if passwords set
+            if (Input::post('password') and Input::post('password_rep'))
+            {
+                // Check if password match
+                if (Input::post("password") != Input::post("password_rep"))
+                {
+                    $errors[] = 'Paroles nesakrīt!';
+                    $is_error = true;
+                }
+                // Check if password is longer than 6 simbols
+                elseif (strlen(Input::post("password")) < 6)
+                {
+                    $errors[] = 'Parolei jābūt garākai par 6 simboliem!';
+                    $is_error = true;
+                }
+            }
+            else
+            {
+                // Password wans't set
+                $is_error = true;
+                $errors[] = 'Lūdzu ievadiet paroli abos laukos!';
+            }
+
+            // if new password valid
+            if ( ! $is_error)
+            {
+                // try to change password
+                $auth = Auth::instance();
+                $username = $auth->get_screen_name();
+                if ($auth->change_password(Input::post('password_old'), Input::post("password"), $username))
+                {
+                    // password changed
+                    Session::set_flash('success', 'Parole vieksmīgi nomainīta!');
+                    Response::redirect('/');
+                }
+                else
+                {
+                    // old password inccorect
+                    $errors[] = 'Pašreizējā parole nepareiza!';
+                    Session::set_flash('errors', $errors);
+                    $this->template->page_title = 'Nomaini paroli';
+                    $this->template->content = View::forge('user/change_password');
+                }
+            }
+            else
+            {
+                // new passoword was invalid
+                Session::set_flash('errors', $errors);
+                $this->template->page_title = 'Nomaini paroli';
+                $this->template->content = View::forge('user/change_password');
+            }
+        }
+        else
+        {
+            // No form submited
+            // Generate form view°
+            $this->template->page_title = 'Nomaini paroli';
+            $this->template->content = View::forge('user/change_password');
+        }
     }
 }
 
