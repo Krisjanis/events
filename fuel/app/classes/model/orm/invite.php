@@ -19,4 +19,28 @@ class Model_Orm_Invite extends Orm\Model
         'email',
         'message'
     );
+
+    protected static $_belongs_to = array(
+        'sender' => array(
+            'key_from'       => 'sender_id',
+            'model_to'       => 'Model_Orm_User',
+            'key_to'         => 'user_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'recipient' => array(
+            'key_from'       => 'recipient_id',
+            'model_to'       => 'Model_Orm_User',
+            'key_to'         => 'user_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'event' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Event',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        )
+    );
 }

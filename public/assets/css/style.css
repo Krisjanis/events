@@ -34,6 +34,53 @@ textarea {
     margin-left: 5px;
 }
 
-.user-profile-info a:hover {
+a:hover {
     text-decoration: none;
+}
+
+.event-heading .label {
+    line-height: 40px;
+}
+
+.event-title {
+    float: left;
+}
+
+.comment-heading-wrapper {
+    background: url('../img/comment-line.png') repeat-x 0 50%;
+    cursor: pointer;
+}
+
+.comment-heading {
+    text-align: center;
+}
+
+.comment-heading span {
+    padding: 0 10px;
+    background-color: #fff;
+}
+
+.comment-info {
+    margin-bottom: 0;
+}
+
+.comment-info .comment-action {
+    margin-left: 5px;
+}
+
+.comment-author {
+    padding-right: 20px;
+}
+
+.comment-date {
+    color: #606060;
+    font-style: italic;
+}
+
+.comment {
+    margin-bottom: 15px;
+}
+
+li {
+    list-style: none;
 }

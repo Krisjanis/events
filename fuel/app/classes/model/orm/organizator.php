@@ -17,4 +17,21 @@ class Model_Orm_Organizator extends Orm\Model
         'user_id',
         'is_author'
     );
+
+    protected static $_belongs_to = array(
+        'event' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Event',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'user' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_User',
+            'key_to'         => 'user_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        )
+    );
 }

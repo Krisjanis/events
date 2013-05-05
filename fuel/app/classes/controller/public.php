@@ -39,7 +39,10 @@ class Controller_Public extends Controller_Template
 
             $this->template->navbar = View::forge("navbar/user");
             // if messages found, show count
-            is_null($invites_count) and $invites_count != 0 or $this->template->navbar->set('invitesCount', $invites_count);
+            if ( ! is_null($invites_count) and $invites_count != 0)
+            {
+                $this->template->navbar->set('invites_count', $invites_count);
+            }
 
             // get users username
             $query = Model_Orm_User::query()->where('user_id', $user_id);

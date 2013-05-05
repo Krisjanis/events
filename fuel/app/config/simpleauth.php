@@ -76,7 +76,10 @@ return array(
 		 * Global allow by assigning true to a role (use with care!):
 		 *   'super' => true,
 		 */
-		 'user'  => array('event' => array('create', 'add_organizator', 'delete_organizator', 'edit_attribute')),
+		 'user'  => array(
+			'event' => array('create', 'add_organizator', 'accept_invite', 'delete_organizator', 'edit_attribute'),
+			'comment' => array('create', 'delete')
+		 ),
 		 'moderator'  => array('event' => array('create', 'add_organizator'))
 	),
 

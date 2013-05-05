@@ -48,4 +48,33 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Hide comments and show them on click
+    $('.comments ul').css({
+        visibility: 'hidden',
+        display: 'none'
+    });
+
+    $('.comment-heading-wrapper').each(function() {
+        var comments = $(this).parent().find('ul');
+        $(this).click(function() {
+            if (comments.css('visibility') == 'hidden') {
+                comments.css ({
+                    visibility: 'visible'
+                });
+                comments.animate({
+                    height: 'toggle'
+                }, 'fast');
+            }
+            else {
+                comments.animate({
+                    height: 'toggle'
+                }, 'fast', function(){
+                    comments.css ({
+                        visibility: 'hidden'
+                    });
+                });
+            }
+        });
+    });
 });

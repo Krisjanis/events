@@ -4,9 +4,9 @@
         <div class="user-profile-info clearfix">
             <p class="definition pull-left">Profila darbības</p>
             <div class="info pull-left">
-                <?php echo Html::anchor('user/delete/', '<span class="label label-important">Dzēst!</span>', array('onclick' => "return confirm('Vai tiešām vēlaties neatgriezeniski dzēst savu profilu?')")); ?>
-                <?php echo Html::anchor('user/edit/', '<span class="label label-warning">Labot!</span>'); ?>
-                <?php echo Html::anchor('user/change_password/', '<span class="label label-warning">Mainīt paroli!</span>'); ?>
+                <?php echo Html::anchor('user/delete/', "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties neatgriezeniski dzēst savu profilu?')")); ?>
+                <?php echo Html::anchor('user/edit/', "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>"); ?>
+                <?php echo Html::anchor('user/change_password/', "<span class='label label-warning'>Mainīt paroli <i class='icon-edit icon-white'></i></span>"); ?>
             </div>
         </div>
     <?php endif; ?>
@@ -18,12 +18,14 @@
         </div>
         <?php endif; ?>
     </div>
-    <div class="user-profile-info clearfix">
-        <p class="definition pull-left">E-pasts</p>
-        <div class="info pull-left">
-            <p><?php echo $user['email']; ?></p>
+    <?php if ($onwer_access) : ?>
+        <div class="user-profile-info clearfix">
+            <p class="definition pull-left">E-pasts</p>
+            <div class="info pull-left">
+                <p><?php echo $user['email']; ?></p>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
     <?php if (isset($invites)) : ?>
         <div class="user-profile-info clearfix">
             <p class="definition pull-left">Tev ir jauni ielūgumi</p>
@@ -33,9 +35,9 @@
                     <li>
                         <?php echo Html::anchor('user/view/'.$invite['sender_id'], $invite['sender_username']); ?>
                         Tevi uzaicināja kļūt par organizatoru pasākumā
-                        <?php echo Html::anchor('event/view/'.$invite['event_id'], 'lol'); ?>
-                        <?php echo Html::anchor('event/accept_invite/'.$invite['event_id'], '<span class="label label-success">Apstiprināt</span>'); ?>
-                        <?php echo Html::anchor('event/view/'.$invite['event_id'], '<span class="label label-warning">Nē, paldies</span>'); ?>
+                        <?php echo Html::anchor('event/view/'.$invite['event_id'], $invite['event_title']); ?>
+                        <?php echo Html::anchor('event/accept_invite/'.$invite['event_id'], "<span class='label label-success'>Apstiprināt  <i class='icon-ok icon-white'></i></span>"); ?>
+                        <?php echo Html::anchor('event/view/'.$invite['event_id'], "<span class='label label-warning'>Nē, paldies  <i class='icon-remove icon-white'></i></span>"); ?>
                     </li>
                     <?php endforeach; ?>
                 </ul>

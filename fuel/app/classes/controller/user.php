@@ -42,7 +42,6 @@ class Controller_User extends Controller_Public
 
         // find needed user
         $exist_username = Model_Orm_User::find($user_id);
-        //var_dump($exist_username); die();
 
         // if no user found, view user own profile, or register if guest
         if (empty($exist_username))

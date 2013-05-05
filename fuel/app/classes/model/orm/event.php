@@ -25,4 +25,28 @@ class Model_Orm_Event extends Orm\Model
         'dress_code',
         'assistants'
     );
+
+    protected static $_has_many = array(
+        'organizators' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Organizator',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'invites' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Invite',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'comments' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Comment',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        )
+    );
 }

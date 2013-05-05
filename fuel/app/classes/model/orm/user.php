@@ -25,4 +25,35 @@ class Model_Orm_User extends Orm\Model
         'created_at',
         'group'
     );
+
+    protected static $_has_many = array(
+        'organizators' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Organizator',
+            'key_to'         => 'user_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'senders' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Invite',
+            'key_to'         => 'sender_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'recipients' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Invite',
+            'key_to'         => 'recipient_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'authors' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Comment',
+            'key_to'         => 'author_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        )
+    );
 }
