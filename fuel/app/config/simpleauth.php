@@ -50,7 +50,7 @@ return array(
 		 0    => array('name' => 'Viesis', 'roles' => array()),
 		 1    => array('name' => 'Lietotājs', 'roles' => array('user')),
 		 10   => array('name' => 'Prasmīgs lietotājs', 'roles' => array('user', 'power user')),
-		 50   => array('name' => 'Operātors', 'roles' => array('user', 'moderator')),
+		 100   => array('name' => 'Operātors', 'roles' => array('user', 'moderator')),
 		 
 	),
 
@@ -78,7 +78,8 @@ return array(
 		 */
 		 'user'  => array(
 			'event' => array('create', 'add_organizator', 'accept_invite', 'delete_organizator', 'edit_attribute'),
-			'comment' => array('create', 'delete')
+			'comment' => array('create', 'delete'),
+			'admin' => array('event', 'block_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment')
 		 ),
 		 'moderator'  => array('event' => array('create', 'add_organizator'))
 	),

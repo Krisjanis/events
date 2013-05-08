@@ -291,7 +291,7 @@ class Controller_User extends Controller_Public
                 if ($auth->login($_POST['email'], $_POST['password']))
                 {
                     // credentials ok, go right in
-                    Response::redirect('event/create');
+                    Response::redirect('/');
                 }
                 else
                 {
@@ -305,7 +305,7 @@ class Controller_User extends Controller_Public
         else
         {
             // already logged in, redirect to home page
-            Response::redirect('event/create');
+            Response::redirect('/');
         }
 
         // Show the login form
@@ -320,7 +320,7 @@ class Controller_User extends Controller_Public
     {
         $auth = Auth::instance();
         $auth->logout();
-        Response::redirect("/");
+        Response::redirect('/');
     }
 
     /**

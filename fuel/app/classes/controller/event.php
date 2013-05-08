@@ -1,6 +1,6 @@
 <?php
 /**
- * The Admin Controller.
+ * The Event Controller.
  *
  * Event controller validates event form and creates new event, sends invitations
  * to become oganizators to user already in the system and user outside system
@@ -400,6 +400,7 @@ class Controller_Event extends Controller_Public
                 if ( ! $is_error)
                 {
                     // form valid, try to save it
+                    $event['created_at'] = Date::time()->get_timestamp();
                     $new_event = Model_Orm_Event::forge($event);
 
                     if ($new_event and $new_event->save())
@@ -422,7 +423,8 @@ class Controller_Event extends Controller_Public
                         else
                         {
                             // something wen't wrong with adding organizator
-                            Session::set_flash('errors', 'Kaut kas nogāja greizi ar pasākuma autoru, mēģini vēlreiz!');
+                            $error[] = 'Kaut kas nogāja greizi ar pasākuma autoru, mēģini vēlreiz!';
+                            Session::set_flash('errors', $error);
                             $this->template->page_title = 'Izveido pasākumu!';
                             $this->template->content = View::forge('event/create');
                             $this->template->content->form_title = 'Izveido jaunu pasākumu!';
@@ -430,7 +432,8 @@ class Controller_Event extends Controller_Public
                     }
                     else
                     {
-                        Session::set_flash('errors', 'Piedod, bet kaut kas nogāja greizi, mēģini vēlreiz!');
+                        $error[] = 'Piedod, bet kaut kas nogāja greizi, mēģini vēlreiz!';
+                        Session::set_flash('errors', $error);
                         $this->template->page_title = 'Izveido pasākumu!';
                         $this->template->content = View::forge('event/create');
                         $this->template->content->form_title = 'Izveido jaunu pasākumu!';
@@ -1069,6 +1072,42 @@ class Controller_Event extends Controller_Public
         else
         {
             Response::redirect('/');
+        }
+    }
+
+    /**
+     * Shows home page with recent events
+     */
+    public function action_home()
+    {
+        $auth = Auth::instance();
+        $user_group = $auth->get_groups();
+
+        if ($user_group[0][1] != 0)
+        {
+            // get recent events
+            $query = Model_Orm_Event::query()
+                ->order_by('created_at', 'desc')
+                ->limit(12);
+            $event_obj = $query->get();
+
+            $events = array();
+            $i = 0;
+            foreach ($event_obj as $event)
+            {
+                $events[$i]['id'] = $event->event_id;
+                $events[$i]['title'] = $event->title;
+                $events[$i]['desc'] = $event->description;
+                $i++;
+            }
+            $this->template->page_title = 'Sākums';
+            $this->template->content = View::forge('event/home');
+            $this->template->content->set('events', $events);
+        }
+        else
+        {
+            // user not logged in, redirect to login form
+            Response::redirect('user/login');
         }
     }
 }

@@ -23,7 +23,8 @@ class Model_Orm_Event extends Orm\Model
         'entry_fee',
         'takeaway',
         'dress_code',
-        'assistants'
+        'assistants',
+        'created_at'
     );
 
     protected static $_has_many = array(

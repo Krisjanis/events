@@ -77,4 +77,15 @@ $(document).ready(function() {
             }
         });
     });
+
+    // show "..." on long description on home page event descriptions
+    $('.event-thumb').each(function() {
+        var desc = $(this).find('p');
+        if (desc.text().length > 348) {
+            var index = desc.text().lastIndexOf(' ', 348);
+            var newString = desc.text().substring(0, index);
+            newString += ' ...';
+            desc.text(newString);
+        }
+    });
 });

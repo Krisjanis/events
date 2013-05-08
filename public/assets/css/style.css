@@ -84,3 +84,47 @@ a:hover {
 li {
     list-style: none;
 }
+
+.table-small {
+    width: 30px;
+    text-align: center;
+}
+
+.table-normal {
+    width: 150px;
+}
+
+.table-large {
+    width: 350px;
+}
+
+th.table-actions,
+td.table-actions {
+    text-align: right;
+}
+
+.event-thumb {
+    width: 290px;
+    height: 200px;
+    margin: 10px;
+    float: left;
+}
+
+.event-thumb a {
+    display: block;
+    padding: 10px;
+    width: 270px;
+    height: 170px;
+    overflow: hidden;
+    color: #000;
+}
+
+.event-thumb a:hover {
+    opacity: 0.3;
+}
+
+.user-table .table-actions .label {
+    float: right;
+    clear: right;
+    margin-bottom: 2px;
+}
