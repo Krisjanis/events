@@ -54,6 +54,13 @@ class Model_Orm_User extends Orm\Model
             'key_to'         => 'author_id',
             'cascade_save'   => true,
             'cascade_delete' => false
+        ),
+        'alerts' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Alert',
+            'key_to'         => 'recipient_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
         )
     );
 }

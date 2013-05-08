@@ -37,11 +37,37 @@ class Controller_Public extends Controller_Template
             $query = Model_Orm_Invite::query()->where('recipient_id', $user_id);
             $invites_count = $query->count();
 
+            // check if have demote alerts
+            $query = Model_Orm_Alert::query()
+                ->where('recipient_id', $user_id)
+                ->and_where_open()
+                     ->where('type', 'demote')
+                ->and_where_close();
+            $demote_count = $query->count();
+
+            // check if have promote alerts
+            $query = Model_Orm_Alert::query()
+                ->where('recipient_id', $user_id)
+                ->and_where_open()
+                     ->where('type', 'promote')
+                ->and_where_close();
+            $promote_count = $query->count();
+
             $this->template->navbar = View::forge("navbar/user");
             // if messages found, show count
             if ( ! is_null($invites_count) and $invites_count != 0)
             {
                 $this->template->navbar->set('invites_count', $invites_count);
+            }
+            // if demote messages found, show them
+            if ( ! is_null($demote_count) and $demote_count != 0)
+            {
+                $this->template->navbar->set('demote_count', $demote_count);
+            }
+            // if promote messages found, show them
+            if ( ! is_null($promote_count) and $promote_count != 0)
+            {
+                $this->template->navbar->set('promote_count', $promote_count);
             }
 
             // get users username

@@ -19,7 +19,7 @@ class Model_Orm_Alert extends Orm\Model
     );
 
     protected static $_belongs_to = array(
-        'author' => array(
+        'recipient' => array(
             'key_from'       => 'recipient_id',
             'model_to'       => 'Model_Orm_User',
             'key_to'         => 'user_id',

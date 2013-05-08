@@ -1,3 +1,38 @@
+<?php $errors = Session::get_flash('errors'); ?>
+<?php if (isset($errors)) : ?>
+<div class="alert alert-error">
+    <h4>Kļūda!</h4>
+    <?php foreach ($errors as $error) : ?>
+        <?php echo $error.'<br />'; ?>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php $success = Session::get_flash('success'); ?>
+<?php if (isset($success)) : ?>
+<div class="alert alert-success">
+    <h4>Apsveicu!</h4>
+    <?php echo $success.'<br />'; ?>
+</div>
+<?php endif; ?>
+
+<?php if ($onwer_access and isset($alerts)) : ?>
+    <?php foreach ($alerts as $alert) : ?>
+        <?php if ($alert['type'] == 'promote') : ?>
+            <div class="alert alert-success">
+                <?php echo Html::anchor('user/dismiss_alert/'.$alert['id'], '&times;', array('class' => 'close')); ?>
+                <h4>Apsveicu!</h4>
+                <?php echo $alert['message']; ?>
+            </div>
+        <?php else : ?>
+            <div class="alert alert-error">
+                <?php echo Html::anchor('user/dismiss_alert/'.$alert['id'], '&times;', array('class' => 'close')); ?>
+                <h4>:(</h4>
+                <?php echo $alert['message']; ?>
+            </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
+<?php endif; ?>
 <h1><?php echo $user['username']; ?> profils</h1>
 <div class="user-profile">
     <?php if ($onwer_access) : ?>

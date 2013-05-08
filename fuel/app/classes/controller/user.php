@@ -92,7 +92,7 @@ class Controller_User extends Controller_Public
             $i++;
         }
 
-        // check if user is organinzator in eny events
+        // check if user is organinzator in any events
         $query = Model_Orm_Organizator::query()
             ->where('user_id', $user_id)
             ->and_where_open()
@@ -135,6 +135,21 @@ class Controller_User extends Controller_Public
             $i++;
         }
 
+        // check if user has aby alert messages
+        $query = Model_Orm_Alert::query()->where('recipient_id', $user_id);
+        $alerts_obj = $query->get();
+
+        // save them in array
+        $alerts = array();
+        $i = 0;
+        foreach ($alerts_obj as $alert)
+        {
+            $alerts[$i]['id'] = $alert->alert_id;
+            $alerts[$i]['type'] = $alert->type;
+            $alerts[$i]['message'] = $alert->message;
+            $i++;
+        }
+
         $this->template->page_title = $exist_username->username.' profils';
         $this->template->content = View::forge('user/view');
         $this->template->content->set('user', $user);
@@ -142,6 +157,7 @@ class Controller_User extends Controller_Public
         empty($event_author) or $this->template->content->set('event_author', $event_author);
         empty($event_organizator) or $this->template->content->set('event_organizator', $event_organizator);
         empty($invites) or $this->template->content->set('invites', $invites);
+        empty($alerts) or $this->template->content->set('alerts', $alerts);
     }
 
     /**
@@ -587,6 +603,48 @@ class Controller_User extends Controller_Public
             // Generate form view°
             $this->template->page_title = 'Nomaini paroli';
             $this->template->content = View::forge('user/change_password');
+        }
+    }
+
+    /**
+     * Dismises user alert
+     *
+     * @param int $alert_id is id of alert which user wished to dismiss
+     */
+    public function action_dismiss_alert($alert_id = null)
+    {
+        // if no alert if given, redirect back
+        is_null($alert_id) and Response::redirect('user/view');
+
+        // get alert
+        $query = Model_Orm_Alert::query()->where('alert_id', $alert_id);
+        $alert_obj = $query->get_one();
+
+        if ( ! empty($alert_obj))
+            {
+            // check if user is alert recipient
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+            if ($alert_obj->recipient_id == $user_id)
+            {
+                // user is alerts recipent, delete alert
+                $alert_obj->delete();
+                Response::redirect('user/view');
+            }
+            else
+            {
+                // user is not alerts recipient
+                $error[] = 'Nevar paslēpt cita lietotāja paziņojumus!';
+                Session::set_flash('errors', $error);
+                Response::redirect('user/view');
+            }
+        }
+        else
+        {
+            // alert not found
+            $error[] = 'Šis paziņojums vairs neeksistē!';
+            Session::set_flash('errors', $error);
+            Response::redirect('user/view');
         }
     }
 }

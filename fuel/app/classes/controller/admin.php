@@ -177,6 +177,15 @@ class Controller_Admin extends Controller_Public
                     $user_obj->group = -1;
                     $user_obj->save();
 
+                    // send author an alert
+                    $alert = array(
+                        'recipient_id'  => $user_obj->user_id,
+                        'type'   => 'demote',
+                        'message' => 'Tavā pasākumā '.$event_obj->event_id.' tika pārkāpti vietnes lietošanas noteikumi, pasākums tika dzēsts un tavs profils ir bloķēts!'
+                    );
+                    $new_alert = Model_Orm_Alert::forge($alert);
+                    $new_alert->save();
+
                     // delete event
                     $event_obj->delete();
                 }
