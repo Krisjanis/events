@@ -16,6 +16,13 @@
 </div>
 <?php endif; ?>
 
+<h2>Birkas</h2>
+<ul class="tags">
+<?php foreach ($tags as $tag) : ?>
+    <li><?php echo Html::anchor('tag/view/'.$tag['id'], "<span class='label label-info'>".$tag['title']."</span>"); ?></li>
+<?php endforeach; ?>
+</ul>
+
 <h2>Jaunākie pasākumi</h2>
 <?php foreach ($events as $event) : ?>
 <div class="event-thumb">

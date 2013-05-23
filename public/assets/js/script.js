@@ -88,4 +88,12 @@ $(document).ready(function() {
             desc.text(newString);
         }
     });
+
+    // add tags in event creation
+//    $('#tags').tagHandler({
+//        assignedTags: [ 'C', 'Perl', 'PHP' ],
+//        availableTags: [ 'C', 'C++', 'C#', 'Java', 'Perl', 'PHP', 'Python' ],
+//        autocomplete: true,
+//        allowAdd: false
+//    });
 });

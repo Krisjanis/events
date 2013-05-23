@@ -1,3 +1,4 @@
+<li><?php echo Html::anchor('tag/create', 'Pievienot birku'); ?></li>
 <li><?php echo Html::anchor('event/create', 'Izveidot pasākumu'); ?></li>
 <li class="navbar-profile">
     <?php $label = "Pieslēdzies kā $username"; ?>

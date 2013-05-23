@@ -10,7 +10,9 @@
         <?php
             echo Asset::css('bootstrap.css');
             echo Asset::css('style.css');
+            echo Asset::css('jquery.taghandler.css');
             echo Asset::js('jquery-1.9.1.min.js');
+            echo Asset::js('jquery.taghandler.min.js');
             echo Asset::js('script.js');
         ?>
     </head>

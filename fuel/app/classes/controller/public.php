@@ -23,17 +23,18 @@ class Controller_Public extends Controller_Template
         $user_id = $auth->get_user_id();
         $user_id = $user_id[1];
         $user_group = $auth->get_groups();
+        $user_group = $user_group[0][1];
 
 
         // Determine current users group
-        if ($user_group[0][1] == 0)
+        if ($user_group == 0)
         {
             // Current user is guest, load guest menu
             $this->template->navbar = View::forge("navbar/guest");
         }
-        elseif ($user_group[0][1] == 1 || $user_group[0][1] == 10)
+        else
         {
-            // Current user is user or power user, check if he has messages
+            // Current user is blocked, user, power user or admin, check if he has messages
             $query = Model_Orm_Invite::query()->where('recipient_id', $user_id);
             $invites_count = $query->count();
 
@@ -52,8 +53,23 @@ class Controller_Public extends Controller_Template
                      ->where('type', 'promote')
                 ->and_where_close();
             $promote_count = $query->count();
+            if ($user_group == 1)
+            {
+                $this->template->navbar = View::forge("navbar/user");
+            }
+            elseif ($user_group == -1)
+            {
+                $this->template->navbar = View::forge("navbar/blocked");
+            }
+            elseif ($user_group == 10)
+            {
+                $this->template->navbar = View::forge("navbar/power");
+            }
+            elseif ($user_group == 100)
+            {
+                $this->template->navbar = View::forge("navbar/admin");
+            }
 
-            $this->template->navbar = View::forge("navbar/user");
             // if messages found, show count
             if ( ! is_null($invites_count) and $invites_count != 0)
             {
@@ -74,29 +90,6 @@ class Controller_Public extends Controller_Template
             $query = Model_Orm_User::query()->where('user_id', $user_id);
             $username = $query->get_one()->username;
             $this->template->navbar->set('username', $username);
-        }
-        elseif ($user_group[0][1] == 100)
-        {
-             // Current user is moderator, load moderator menu
-            $query = Model_Orm_Invite::query()->where('recipient_id', $user_id);
-            $invites_count = $query->count();
-
-            $this->template->navbar = View::forge("navbar/admin");
-            // if messages found, show count
-            if ( ! is_null($invites_count) and $invites_count != 0)
-            {
-                $this->template->navbar->set('invites_count', $invites_count);
-            }
-
-            // get users username
-            $query = Model_Orm_User::query()->where('user_id', $user_id);
-            $username = $query->get_one()->username;
-            $this->template->navbar->set('username', $username);
-        }
-        elseif ($user_group[0][1] == -1)
-        {
-            // Current user is blocked, load bloked users menu
-            $this->template->navbar = View::forge("navbar/guest");
         }
     }
 }

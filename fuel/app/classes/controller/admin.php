@@ -352,6 +352,15 @@ class Controller_Admin extends Controller_Public
                     $user_obj->group = 1;
                     $user_obj->save();
 
+                    // send user an alert
+                    $alert = array(
+                        'recipient_id'  => $user_obj->user_id,
+                        'type'   => 'promote',
+                        'message' => 'Tavs profils tika atbloķēts!'
+                    );
+                    $new_alert = Model_Orm_Alert::forge($alert);
+                    $new_alert->save();
+
                     Session::set_flash('success', 'Lietotājs "'.$user_obj->username.'" veiksmīgi atbloķēts!');
                     Response::redirect('admin/user');
                 }
@@ -407,6 +416,15 @@ class Controller_Admin extends Controller_Public
                         // not admin, block it
                         $user_obj->group = -1;
                         $user_obj->save();
+
+                        // send user an alert
+                        $alert = array(
+                            'recipient_id'  => $user_obj->user_id,
+                            'type'   => 'demote',
+                            'message' => 'Tu parkāpi vietnes lietošanas noteikumus un tavs profils ir bloķēts!'
+                        );
+                        $new_alert = Model_Orm_Alert::forge($alert);
+                        $new_alert->save();
 
                         Session::set_flash('success', 'Lietotājs "'.$user_obj->username.'" veiksmīgi bloķēts!');
                         Response::redirect('admin/user');
@@ -468,8 +486,18 @@ class Controller_Admin extends Controller_Public
                     // user not power user, check if not admin
                     if ($user_obj->group != 100)
                     {
+                        // promote user to power user
                         $user_obj->group = 10;
                         $user_obj->save();
+
+                        // send user an alert
+                        $alert = array(
+                            'recipient_id'  => $user_obj->user_id,
+                            'type'   => 'promote',
+                            'message' => 'Tu esi paaugstināts par prasmīgu lietotāju, tagad tev ir tiesības pievienot jaunas birkas!'
+                        );
+                        $new_alert = Model_Orm_Alert::forge($alert);
+                        $new_alert->save();
 
                         Session::set_flash('success', 'Lietotājs "'.$user_obj->username.'" veiksmīgi paaugstināts par prasmīgu lietotāju!');
                         Response::redirect('admin/user');
@@ -532,6 +560,15 @@ class Controller_Admin extends Controller_Public
                     $user_obj->group = 1;
                     $user_obj->save();
 
+                    // send user an alert
+                    $alert = array(
+                        'recipient_id'  => $user_obj->user_id,
+                        'type'   => 'demote',
+                        'message' => 'Tu pārkāpi birku pievienošanas noteikumus un tu esi pazemināts par lietotāju!'
+                    );
+                    $new_alert = Model_Orm_Alert::forge($alert);
+                    $new_alert->save();
+
                     Session::set_flash('success', 'Lietotājs "'.$user_obj->username.'" veiksmīgi pazemināts par lietotāju!');
                     Response::redirect('admin/user');
                 }
@@ -589,6 +626,15 @@ class Controller_Admin extends Controller_Public
                         // not himself, demote it
                         $user_obj->group = 10;
                         $user_obj->save();
+
+                        // send admin an alert
+                        $alert = array(
+                            'recipient_id'  => $user_obj->user_id,
+                            'type'   => 'demote',
+                            'message' => 'Tu pārkāpi operatoru noteikumus un esi pazemināts par prasmīgu lietotāju!'
+                        );
+                        $new_alert = Model_Orm_Alert::forge($alert);
+                        $new_alert->save();
 
                         Session::set_flash('success', 'Operātors "'.$user_obj->username.'" veiksmīgi pazemināts par prasmīgu lietotāju!');
                         Response::redirect('admin/user');
@@ -826,6 +872,15 @@ class Controller_Admin extends Controller_Public
                     // block author
                     $user_obj->group = -1;
                     $user_obj->save();
+
+                    // send author an alert
+                    $alert = array(
+                        'recipient_id'  => $user_obj->user_id,
+                        'type'   => 'demote',
+                        'message' => 'Tu savā pievienotajā komentārā pārkāpi vietnes noteikumus, komentārs tika izdzēsts un tavs profils bloķēts!'
+                    );
+                    $new_alert = Model_Orm_Alert::forge($alert);
+                    $new_alert->save();
                 }
                 else
                 {
@@ -849,6 +904,139 @@ class Controller_Admin extends Controller_Public
         else
         {
             // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+    }
+
+    public function action_tag()
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.tag'))
+        {
+            $tag = true;
+            // check if search form submited
+            if (Input::method() == 'POST')
+            {
+                // search form submited, search for tag
+                $query = Model_Orm_Tag::query()->where('event_id', Input::post('value'));
+                $comment_obj = $query->get();
+
+                if (empty($comment_obj))
+                {
+                    // event comments not found
+                    $error[] = 'Netika astrasts neviens šī pasākuma komentārs!';
+                    Session::set_flash('errors', $error);
+                    Session::set_flash('search_type', Input::post('search_type'));
+                    Session::set_flash('value', Input::post('value'));
+                    Response::redirect('admin/comment');
+                }
+
+
+                // comments found, get info
+                $comments = array();
+                $i = 0;
+                foreach ($comment_obj as $comment)
+                {
+                    $comments[$i]['id'] = $comment->comment_id;
+                    $comments[$i]['author_id'] = $comment->author_id;
+                    $query = Model_Orm_User::query()->where('user_id', $comment->author_id);
+                    $author_obj = $query->get_one();
+                    $comments[$i]['author'] = $author_obj->username;
+                    $author_obj->group == 100 and $comments[$i]['admin'] = true;
+                    $comments[$i]['event_id'] = $comment->event_id;
+                    $comments[$i]['message'] = $comment->message;
+                    $i++;
+                }
+
+                Session::set_flash('success', 'Komentāri veiksmīgi atrasti!');
+                Session::set_flash('search_type', Input::post('search_type'));
+                Session::set_flash('value', Input::post('value'));
+            }
+            else
+            {
+                // no form submited, render recent tags
+                $query = Model_Orm_Tag::query()
+                    ->order_by('tag_id', 'desc')
+                    ->limit(20);
+                $tag_obj = $query->get();
+
+                $tags = array();
+                $i = 0;
+                foreach ($tag_obj as $tag)
+                {
+                    $tags[$i]['id'] = $tag->tag_id;
+                    $tags[$i]['title'] = $tag->title;
+                    $tags[$i]['author_id'] = $tag->author_id;
+                    $query = Model_Orm_User::query()->where('user_id', $tag->author_id);
+                    $author_obj = $query->get_one();
+                    $tags[$i]['author'] = $author_obj->username;
+                    $author_obj->group == 100 and $tags[$i]['admin'] = true;
+                    $i++;
+                }
+            }
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+        $this->template->page_title = 'Birkas | Operatora panelis';
+        $this->template->content = View::forge('admin/template');
+        $this->template->content->set('tag', $tag);
+        $this->template->content->panel = View::forge('admin/tag');
+        isset($tags) and $this->template->content->panel->set('tags', $tags);
+    }
+
+    public function action_tag_create()
+    {
+        if (Auth::has_access('tag.create'))
+        {
+            if (Input::method() == 'POST')
+            {
+                // tag submited, validate it
+                if (Input::post('title') and Input::post('title') != '')
+                {
+                    // comment submited, check if tag already exists
+                    $query = Model_Orm_Tag::query()->where('title', Input::post('title'));
+                    $tag_obj = $query->get_one();
+                    if (empty($tag_obj))
+                    {
+                        // tag doesn't exist, create it
+                        $user_id = Auth::instance()->get_user_id();
+                        $user_id = $user_id[1];
+
+                        $tag = array(
+                            'author_id'    => $user_id,
+                            'title'        => Input::post('title'),
+                            'event_count'  => 0
+                        );
+                        $new_tag = Model_Orm_Tag::forge($tag);
+
+                        if ($new_tag and $new_tag->save())
+                        {
+                            Session::set_flash('tag_success', 'Birka veiksmīgi pievienota');
+                            Response::redirect('admin/tag');
+                        }
+                    }
+                    else
+                    {
+                        // tag already exists
+                        $errors[] = 'Birka jau ekistē!';
+                        Session::set_flash('errors', $errors);
+                        Response::redirect('admin/tag');
+                    }
+                }
+                else
+                {
+                    // tag not set
+                    $errors[] = 'Ievadi birku!';
+                    Session::set_flash('tag_errors', $errors);
+                    Response::redirect('admin/tag');
+                }
+            }
+        }
+        else
+        {
             Response::redirect('/');
         }
     }

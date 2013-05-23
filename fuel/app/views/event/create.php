@@ -69,6 +69,17 @@ if (isset($errors)) {
     </div>
 </div>
 <div class="control-group">
+    <label class="control-label" for="tags">Birkas</label>
+    <div class="controls">
+        <input type="text" name="tags" id="tags" value="<?php
+            if (isset($_POST['tags'])) {
+                echo $_POST['tags'];
+            }
+        ?>"/>
+        <span class="help-block">Birkas atslēgas vārdi. Sānā ir redzamas populārākās birkas. Atdali tās ar komantu</span>
+    </div>
+</div>
+<div class="control-group">
     <label class="control-label" for="desc">Apraksts</label>
     <div class="controls">
         <textarea name="desc" id="desc" class="span5"><?php

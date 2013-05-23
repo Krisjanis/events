@@ -128,3 +128,7 @@ td.table-actions {
     clear: right;
     margin-bottom: 2px;
 }
+
+.tags li {
+    display: inline;
+}

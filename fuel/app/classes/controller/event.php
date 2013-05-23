@@ -98,6 +98,22 @@ class Controller_Event extends Controller_Public
             $i++;
         }
 
+        // get event tags
+        $query = Model_Orm_HasTag::query()->where('event_id', $event_obj->event_id);
+        $tag_obj = $query->get();
+
+        $tags = array();
+        $i = 0;
+        foreach ($tag_obj as $tag)
+        {
+            $query = Model_Orm_Tag::query()->where('tag_id', $tag->tag_id);
+            $tag_obj = $query->get_one();
+
+            $tags[$i]['id'] = $tag_obj->tag_id;
+            $tags[$i]['title'] = $tag_obj->title;
+            $i++;
+        }
+
         // get events comments
         $comments = array();
 
@@ -176,6 +192,7 @@ class Controller_Event extends Controller_Public
         $this->template->content = View::forge('event/view');
         $this->template->content->set('event', $event);
         $this->template->content->set('organizators', $organizators);
+        $this->template->content->set('tags', $tags);
         $this->template->content->set('organizator_access', $organizator_access);
         $this->template->content->set('author_access', $author_access);
         $this->template->content->set('comments', $comments);
@@ -250,6 +267,52 @@ class Controller_Event extends Controller_Public
                     $is_error = true;
                     $errors[] = 'Lūdzu ievadiet pasākuma saites nosaukumu!';
                 }
+
+                // check if tags set
+                if (Input::post('tags'))
+                {
+                    // check how much  tags set
+                    $tags = explode(',', Input::post('tags'));
+                    if (count($tags) <= 7)
+                    {
+                        // check if any tag exists
+                        $valid_tag = array();
+                        foreach ($tags as $tag)
+                        {
+                            $tag = trim($tag);
+                            $query = Model_Orm_Tag::query()->where('title', $tag);
+                            $tag_obj = $query->get_one();
+
+                            if ( ! empty($tag_obj))
+                            {
+                                // tag exists, add it
+                                $valid_tag[] = $tag;
+                            }
+                            else
+                            {
+                                // tag doesn't exists
+                                $is_error = true;
+                                $errors[] = 'Birka "'.$tag.'" neeksistē!';
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // tag limit is 7
+                        $is_error = true;
+                        $errors[] = 'Pasākumam nevar būt vairāk par 7 birkām!';
+                    }
+                }
+                else
+                {
+                    // tags not set
+                    $is_error = true;
+                    $errors[] = 'Lūdzu ievadiet vismaz vienu pasākuma birku!';
+                }
+
+//                var_dump($valid_tag);
+//
+//                die();
 
                 // check if dexcription set
                 if ( ! Input::post('desc'))
@@ -413,22 +476,27 @@ class Controller_Event extends Controller_Public
                             'is_author' => 1
                         );
                         $new_organizator = Model_Orm_Organizator::forge($organizator);
+                        $new_organizator->save();
 
-                        if ($new_organizator and $new_organizator->save())
+                        // save each tag
+                        foreach ($valid_tag as $tag)
                         {
-                            // organizator successfully added
-                            Session::set_flash('success', 'Pasākums "'.$new_event->title.'" veiksmīgi izveidots.');
-                            Response::redirect('event/view/'.$event['event_id']);
+                            $query = Model_Orm_Tag::query()->where('title', $tag);
+                            $tag_obj = $query->get_one();
+                            $count = $tag_obj->event_count;
+                            $tag_obj->event_count = ++$count;
+
+                            $tag = array(
+                                'tag_id'    => $tag_obj->tag_id,
+                                'event_id'  => $new_event->event_id
+                            );
+                            $new_tag = Model_Orm_HasTag::forge($tag);
+                            $tag_obj->save();
+                            $new_tag->save();
                         }
-                        else
-                        {
-                            // something wen't wrong with adding organizator
-                            $error[] = 'Kaut kas nogāja greizi ar pasākuma autoru, mēģini vēlreiz!';
-                            Session::set_flash('errors', $error);
-                            $this->template->page_title = 'Izveido pasākumu!';
-                            $this->template->content = View::forge('event/create');
-                            $this->template->content->form_title = 'Izveido jaunu pasākumu!';
-                        }
+
+                        Session::set_flash('success', 'Pasākums "'.$new_event->title.'" veiksmīgi izveidots.');
+                        Response::redirect('event/view/'.$event['event_id']);
                     }
                     else
                     {
@@ -442,6 +510,19 @@ class Controller_Event extends Controller_Public
                 else
                 {
                     // some error in validation, render registeration form with errors
+
+                    // make string of valid tags for form
+                    $form_tags = '';
+                    $last_tag = end($valid_tag);
+                    foreach ($valid_tag as $tag)
+                    {
+                        $form_tags .= $tag;
+                        if ($tag != $last_tag)
+                        {
+                            $form_tags .= ', ';
+                        }
+                    }
+                    $_POST['tags'] = $form_tags;
                     Session::set_flash('errors', $errors);
                     $this->template->page_title = 'Izveido pasākumu!';
                     $this->template->content = View::forge('event/create');
@@ -669,14 +750,16 @@ class Controller_Event extends Controller_Public
     /**
      * Edit atributes of given event
      *
-     * @param integer $event_id is link to were redirect
      * @param integer $event_id is ID of event needed to be edited
      */
-    public function action_edit_attribute($event_id = null, $event_id = null)
+    public function action_edit_attribute($event_id = null)
     {
         // check if user has access to editing attribute
         if (Auth::has_access('event.edit_attribute'))
         {
+            // if event id is not given, redirect away
+            is_null($event_id) and Response::redirect('/');
+
             // check if user has access to editing event
             $user_id = Auth::instance()->get_user_id();
             $user_id = $user_id[1];
@@ -1100,9 +1183,27 @@ class Controller_Event extends Controller_Public
                 $events[$i]['desc'] = $event->description;
                 $i++;
             }
+
+            // get tags
+            $query = Model_Orm_Tag::query()
+                ->order_by('event_count', 'desc')
+                ->limit(12);
+            $tag_obj = $query->get();
+
+            $tags = array();
+            $i = 0;
+            foreach ($tag_obj as $tag)
+            {
+                $tags[$i]['id'] = $tag->tag_id;
+                $tags[$i]['title'] = $tag->title;
+                $tags[$i]['count'] = $tag->event_count;
+                $i++;
+            }
+            
             $this->template->page_title = 'Sākums';
             $this->template->content = View::forge('event/home');
             $this->template->content->set('events', $events);
+            $this->template->content->set('tags', $tags);
         }
         else
         {

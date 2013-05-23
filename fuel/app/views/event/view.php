@@ -337,6 +337,12 @@
         </li>
     <?php endforeach; ?>
     </ul>
+    <h3>Birkas</h3>
+    <ul class="tags">
+        <?php foreach ($tags as $tag) : ?>
+        <li><?php echo Html::anchor('tag/view/'.$tag['id'], "<span class='label label-info'>".$tag['title']."</span>"); ?></li>
+        <?php endforeach; ?>
+    </ul>
     <?php if ($organizator_access) : ?>
         <?php echo Form::open('event/add_organizator'); ?>
             <h3>Pievienot organizatoru</h3>
@@ -346,6 +352,6 @@
             </div>
         <?php echo Form::close(); ?>
         <h3>Labot atribūtus</h3>
-        <?php echo Html::anchor('event/edit_attribute/'.$event['id'].'/'.$event['id'], 'Labot!', array('class' => 'btn span1')); ?>
+        <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn span1')); ?>
     <?php endif; ?>
 </div>

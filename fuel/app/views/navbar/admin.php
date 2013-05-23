@@ -1,3 +1,4 @@
+<li><?php echo Html::anchor('event/create', 'Izveidot pasākumu'); ?></li>
 <li><?php echo Html::anchor('admin/event', 'Operatora panelis'); ?></li>
 <li class="navbar-profile">
     <?php $label = "Pieslēdzies kā $username"; ?>

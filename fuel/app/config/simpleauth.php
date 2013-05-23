@@ -78,10 +78,14 @@ return array(
 		 */
 		 'user'  => array(
 			'event' => array('create', 'add_organizator', 'accept_invite', 'delete_organizator', 'edit_attribute'),
-			'comment' => array('create', 'delete'),
-			'admin' => array('event', 'block_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment')
+			'comment' => array('create', 'delete')
 		 ),
-		 'moderator'  => array('event' => array('create', 'add_organizator'))
+		 'power user' =>array(
+			'tag' => array('create')
+		 ),
+		 'moderator'  => array(
+			'admin' => array('event', 'block_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'tag')
+        )
 	),
 
 	/**
