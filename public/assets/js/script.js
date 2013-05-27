@@ -88,12 +88,14 @@ $(document).ready(function() {
             desc.text(newString);
         }
     });
-
-    // add tags in event creation
-//    $('#tags').tagHandler({
-//        assignedTags: [ 'C', 'Perl', 'PHP' ],
-//        availableTags: [ 'C', 'C++', 'C#', 'Java', 'Perl', 'PHP', 'Python' ],
-//        autocomplete: true,
-//        allowAdd: false
-//    });
 });
+
+// Add new tag to hidden input element for creating new tags
+function addTag(tag, index) {
+    var input = $('#new-tags');
+    input.val(input.val() + ', ' + tag);
+    var a = $('#tag-' + index);
+    a.attr('onclick', 'return false;');
+    a.find('span').removeClass('label-success').text('Birka pievienota pasākumam');
+    a.css('cursor', 'default');
+}

@@ -74,10 +74,10 @@ class Controller_User extends Controller_Public
         );
 
         // check if user is author in any events
-        $query = Model_Orm_Organizator::query()
+        $query = Model_Orm_Participant::query()
             ->where('user_id', $user_id)
             ->and_where_open()
-                ->where('is_author', 1)
+                ->where('role', 10)
             ->and_where_close();
         $author_obj = $query->get();
 
@@ -93,10 +93,10 @@ class Controller_User extends Controller_Public
         }
 
         // check if user is organinzator in any events
-        $query = Model_Orm_Organizator::query()
+        $query = Model_Orm_Participant::query()
             ->where('user_id', $user_id)
             ->and_where_open()
-                ->where('is_author', 0)
+                ->where('role', 1)
             ->and_where_close();
         $organizators_obj = $query->get();
 

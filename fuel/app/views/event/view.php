@@ -323,19 +323,21 @@
 <div class="span3 pull-right">
     <h3>Organizatori</h3>
     <ul class="organizators">
-    <?php if (isset($organizators['author'])) : ?>
-        <li><?php echo $organizators['author']['username']; ?> <span class='label label-info pull-right'>Autors</i></span></li>
+    <?php if (isset($participants['author'])) : ?>
+        <li><?php echo $participants['author']['username']; ?> <span class='label label-info pull-right'>Autors</i></span></li>
     <?php endif; ?>
-    <?php foreach ($organizators['organizators'] as $organizator) : ?>
-        <li>
-            <?php echo $organizator['username']; ?>
-            <?php if ($author_access) : ?>
-                <div class="pull-right">
-                    <a href="#"><?php echo Html::anchor('event/delete_organizator/'.$event['id'].'/'.$event['id'].'/'.$organizator['id'], "<span class='label label-important pull-right'>Dzēst  <i class='icon-trash icon-white'></i></span>"); ?></a>
-                </div>
-            <?php endif; ?>
-        </li>
-    <?php endforeach; ?>
+    <?php if (isset($participants['organizators'])) : ?>
+        <?php foreach ($participants['organizators'] as $organizator) : ?>
+            <li>
+                <?php echo $organizator['username']; ?>
+                <?php if ($author_access) : ?>
+                    <div class="pull-right">
+                        <a href="#"><?php echo Html::anchor('participant/delete/'.$event['id'].'/'.$organizator['id'], "<span class='label label-important pull-right'>Dzēst  <i class='icon-trash icon-white'></i></span>"); ?></a>
+                    </div>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+    <?php endif; ?>
     </ul>
     <h3>Birkas</h3>
     <ul class="tags">
@@ -344,7 +346,19 @@
         <?php endforeach; ?>
     </ul>
     <?php if ($organizator_access) : ?>
-        <?php echo Form::open('event/add_organizator'); ?>
+        <?php if (isset($requests)) : ?>
+            <h3>Pieprasījumi kļūt par organizatoru</h3>
+            <ul class="organizators">
+            <?php foreach ($requests as $request) : ?>
+                <li>
+                    <?php echo Html::anchor('user/view/'.$request['id'], $request['username']); ?>
+                    <?php echo Html::anchor('participant/decline_request/'.$event['id'].'/'.$request['id'], "<span class='label label-important'><i class='icon-remove icon-white'></i></span>", array('class' => 'pull-right')); ?>
+                    <?php echo Html::anchor('participant/accept_request/'.$event['id'].'/'.$request['id'], "<span class='label label-success'><i class='icon-ok icon-white'></i></span>", array('class' => 'pull-right')); ?>
+                </li>
+            <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+        <?php echo Form::open('participant/add_organizator'); ?>
             <h3>Pievienot organizatoru</h3>
             <div class="input-append span3">
                 <input type="hidden" name="event_id" value="<?php echo $event['id']; ?>"/>
@@ -352,6 +366,17 @@
             </div>
         <?php echo Form::close(); ?>
         <h3>Labot atribūtus</h3>
-        <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn span1')); ?>
+        <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn')); ?>
+    <?php else : ?>
+        <h3>Kļūsti par organizatoru</h3>
+        <?php echo Html::anchor('participant/request/'.$event['id'], 'Nosūtīt pieprasījumu', array('class' => 'btn')); ?>
     <?php endif; ?>
+    <?php if (isset($participants['participants'])) : ?>
+        <h3>Dalībnieki</h3>
+        <ul class="organizators">
+        <?php foreach ($participants['participants'] as $participant) : ?>
+            <li><?php echo $participant['username']; ?></li>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    </ul>
 </div>

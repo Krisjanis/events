@@ -30,7 +30,7 @@ class Model_Orm_Event extends Orm\Model
     protected static $_has_many = array(
         'organizators' => array(
             'key_from'       => 'event_id',
-            'model_to'       => 'Model_Orm_Organizator',
+            'model_to'       => 'Model_Orm_Participant',
             'key_to'         => 'event_id',
             'cascade_save'   => true,
             'cascade_delete' => false
@@ -38,6 +38,13 @@ class Model_Orm_Event extends Orm\Model
         'invites' => array(
             'key_from'       => 'event_id',
             'model_to'       => 'Model_Orm_Invite',
+            'key_to'         => 'event_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'requests' => array(
+            'key_from'       => 'event_id',
+            'model_to'       => 'Model_Orm_Request',
             'key_to'         => 'event_id',
             'cascade_save'   => true,
             'cascade_delete' => false

@@ -7,15 +7,15 @@
  * @package  app
  * @extends  Orm\Model
  */
-class Model_Orm_Organizator extends Orm\Model
+class Model_Orm_Participant extends Orm\Model
 {
-    protected static $_table_name = 'organizators';
-    protected static $_primary_key = array('organizator_id');
+    protected static $_table_name = 'participants';
+    protected static $_primary_key = array('participant_id');
     protected static $_properties = array(
-        'organizator_id',
+        'participant_id',
         'event_id',
         'user_id',
-        'is_author'
+        'role'
     );
 
     protected static $_belongs_to = array(

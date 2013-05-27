@@ -40,10 +40,10 @@ class Controller_Admin extends Controller_Public
                     {
                         $events[0]['type'] = 'Privāts';
                     }
-                    $query = Model_Orm_Organizator::query()
+                    $query = Model_Orm_Participant::query()
                        ->where('event_id', $event_obj->event_id)
                        ->and_where_open()
-                            ->where('is_author', 1)
+                            ->where('role', 10)
                        ->and_where_close();
                     $author_id = $query->get_one()->user_id;
                     $events[0]['author_id'] = $author_id;
@@ -84,10 +84,10 @@ class Controller_Admin extends Controller_Public
                     {
                         $events[$i]['type'] = 'Privāts';
                     }
-                    $query = Model_Orm_Organizator::query()
+                    $query = Model_Orm_Participant::query()
                         ->where('event_id', $event->event_id)
                         ->and_where_open()
-                            ->where('is_author', 1)
+                            ->where('role', 10)
                         ->and_where_close();
                     $author_id = $query->get_one()->user_id;
                     $events[$i]['author_id'] = $author_id;
@@ -132,10 +132,10 @@ class Controller_Admin extends Controller_Public
             {
                 // if event found, delete all data about it and block its author
                 // find its author
-                $query = Model_Orm_Organizator::query()
+                $query = Model_Orm_Participant::query()
                     ->where('event_id', $event_id)
                     ->and_where_open()
-                        ->where('is_author', 1)
+                        ->where('role', 10)
                     ->and_where_close();
                 $author_id = $query->get_one()->user_id;
 
@@ -155,13 +155,13 @@ class Controller_Admin extends Controller_Public
                         $invite->delete();
                     }
 
-                    // delete all organizator statuses for this event
-                    $query = Model_Orm_Organizator::query()->where('event_id', $event_id);
-                    $organizator_obj = $query->get();
+                    // delete all participants for this event
+                    $query = Model_Orm_Participant::query()->where('event_id', $event_id);
+                    $participant_obj = $query->get();
 
-                    foreach ($organizator_obj as $organizator)
+                    foreach ($participant_obj as $participant)
                     {
-                        $organizator->delete();
+                        $participant->delete();
                     }
 
                     // delete all comments to this event
@@ -171,6 +171,15 @@ class Controller_Admin extends Controller_Public
                     foreach ($comment_obj as $comment)
                     {
                         $comment->delete();
+                    }
+
+                    // delete all requests to this event
+                    $query = Model_Orm_Request::query()->where('event_id', $event_id);
+                    $request_obj = $query->get();
+
+                    foreach ($request_obj as $request)
+                    {
+                        $request->delete();
                     }
 
                     // block author

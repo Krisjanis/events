@@ -4,17 +4,26 @@ echo Form::fieldset_open(null, 'Izveido jaunu pasākumu!');
 
 // Check if there is no error in form submition
 $errors = Session::get_flash('errors');
-if (isset($errors)) {
+$error_tags = Session::get_flash('error_tags');
+if (isset($errors)) :
 ?>
 <div class="alert alert-error">
     <h4>Kļūda!</h4>
     <?php
-        foreach ($errors as $error) {
+        foreach ($errors as $error) :
             echo $error.'<br />';
-        }
+        endforeach;
+        if (isset($error_tags)) :
+            $i = 0;
+            foreach ($error_tags as $error) :
+                echo 'Birka "' . $error . '" neeksistē ';
+                echo Html::anchor('', "<span class='label label-success'>Pievienot <i class='icon-circle-arrow-down icon-white'></i></span><br />", array('onclick' => "addTag('$error', '$i'); return false;", 'id' => "tag-$i"));
+                $i++;
+            endforeach;
+        endif;
     ?>
 </div>
-<?php } ?>
+<?php endif; ?>
 
 <div class="control-group">
     <label class="control-label" for="title">Nosaukums</label>
@@ -206,6 +215,8 @@ if (isset($errors)) {
         </div>
     </div>
 </div>
+
+<input type="hidden" name="new-tags" id="new-tags">
 <button type="submit" class="btn span3">Izveidot</button>
 
 <?php

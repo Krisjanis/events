@@ -71,7 +71,7 @@
                         <?php echo Html::anchor('user/view/'.$invite['sender_id'], $invite['sender_username']); ?>
                         Tevi uzaicināja kļūt par organizatoru pasākumā
                         <?php echo Html::anchor('event/view/'.$invite['event_id'], $invite['event_title']); ?>
-                        <?php echo Html::anchor('event/accept_invite/'.$invite['event_id'], "<span class='label label-success'>Apstiprināt  <i class='icon-ok icon-white'></i></span>"); ?>
+                        <?php echo Html::anchor('participant/accept_invite/'.$invite['event_id'], "<span class='label label-success'>Apstiprināt  <i class='icon-ok icon-white'></i></span>"); ?>
                         <?php echo Html::anchor('event/view/'.$invite['event_id'], "<span class='label label-warning'>Nē, paldies  <i class='icon-remove icon-white'></i></span>"); ?>
                     </li>
                     <?php endforeach; ?>

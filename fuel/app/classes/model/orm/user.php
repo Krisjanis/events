@@ -29,14 +29,21 @@ class Model_Orm_User extends Orm\Model
     protected static $_has_many = array(
         'organizators' => array(
             'key_from'       => 'user_id',
-            'model_to'       => 'Model_Orm_Organizator',
+            'model_to'       => 'Model_Orm_Participant',
             'key_to'         => 'user_id',
             'cascade_save'   => true,
             'cascade_delete' => false
         ),
-        'senders' => array(
+        'invites' => array(
             'key_from'       => 'user_id',
             'model_to'       => 'Model_Orm_Invite',
+            'key_to'         => 'sender_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        ),
+        'requests' => array(
+            'key_from'       => 'user_id',
+            'model_to'       => 'Model_Orm_Request',
             'key_to'         => 'sender_id',
             'cascade_save'   => true,
             'cascade_delete' => false

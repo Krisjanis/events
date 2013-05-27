@@ -77,15 +77,16 @@ return array(
 		 *   'super' => true,
 		 */
 		 'user'  => array(
-			'event' => array('create', 'add_organizator', 'accept_invite', 'delete_organizator', 'edit_attribute'),
-			'comment' => array('create', 'delete')
+			'event' => array('create', 'edit_attribute'),
+			'comment' => array('create', 'delete'),
+			'participant' => array('add_organizator', 'accept_invite', 'delete', 'request', 'decline_request', 'accpet_request')
 		 ),
 		 'power user' =>array(
 			'tag' => array('create')
 		 ),
 		 'moderator'  => array(
 			'admin' => array('event', 'block_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'tag')
-        )
+         )
 	),
 
 	/**
