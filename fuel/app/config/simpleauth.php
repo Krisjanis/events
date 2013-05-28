@@ -79,7 +79,7 @@ return array(
 		 'user'  => array(
 			'event' => array('create', 'edit_attribute'),
 			'comment' => array('create', 'delete'),
-			'participant' => array('add_organizator', 'accept_invite', 'delete', 'request', 'decline_request', 'accpet_request')
+			'participant' => array('add_organizator', 'accept_invite', 'delete', 'request', 'decline_request', 'accpet_request', 'email')
 		 ),
 		 'power user' =>array(
 			'tag' => array('create')

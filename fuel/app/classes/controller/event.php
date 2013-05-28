@@ -615,14 +615,10 @@ class Controller_Event extends Controller_Public
                 ->where('event_id', $event_id)
                 ->and_where_open()
                      ->where('user_id', $user_id)
-                ->and_where_close()
-                ->and_where_open()
-                     ->where('role', 1)
-                     ->or_where('role', 10)
                 ->and_where_close();
             $has_access = $query->get_one();
 
-            if ( ! is_null($has_access))
+            if ( ! is_null($has_access) and $has_access->role != 0)
             {
                 // user has acess to edit this event, check if its not blocked
                 if (Auth::has_access('event.edit_attribute'))

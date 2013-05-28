@@ -70,23 +70,32 @@ class Controller_Comment extends Controller_Public
                 // comment submited, validate it
                 if (Input::post('comment') and Input::post('comment') != '')
                 {
-                    // comment submited
-                    $user_id = Auth::instance()->get_user_id();
-                    $user_id = $user_id[1];
-
-                    $comment = array(
-                        'author_id'  => $user_id,
-                        'event_id'   => $event_id,
-                        'attribute'  => $atr,
-                        'message'    => Input::post('comment'),
-                        'created_at' => Date::time()->get_timestamp()
-                    );
-                    $new_comment = Model_Orm_Comment::forge($comment);
-
-                    if ($new_comment and $new_comment->save())
+                    // check if comment isn't too long
+                    if (strlen(Input::post('comment')) <= 300)
                     {
+                        // comments length is valid
+                        $user_id = Auth::instance()->get_user_id();
+                        $user_id = $user_id[1];
+
+                        $comment = array(
+                            'author_id'  => $user_id,
+                            'event_id'   => $event_id,
+                            'attribute'  => $atr,
+                            'message'    => Input::post('comment'),
+                            'created_at' => Date::time()->get_timestamp()
+                        );
+
+                        $new_comment = Model_Orm_Comment::forge($comment);
+                        $new_comment->save();
+
                         Session::set_flash('success', 'Komentārs veiksmīgi pievienots');
                         Response::redirect('event/view/'.$event_id);
+                    }
+                    else
+                    {
+                        // comment too long
+                        $errors[] = 'Komentāra ziņa nevar būt garāka par 300 simboliem!';
+                        Session::set_flash('errors', $errors);
                     }
                 }
                 else

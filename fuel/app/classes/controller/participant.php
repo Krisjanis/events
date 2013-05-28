@@ -27,7 +27,7 @@ class Controller_Participant  extends Controller_Public
                 ->and_where_close();
             $has_access = $query->get_one();
 
-            if ( ! is_null($has_access))
+            if ( ! is_null($has_access) and $has_access->role != 0)
             {
                 if (Input::method() == 'POST')
                 {
@@ -184,7 +184,7 @@ class Controller_Participant  extends Controller_Public
                 ->and_where_close();
             $has_access = $query->get_one();
 
-            if ( ! is_null($has_access))
+            if ( ! is_null($has_access) and $has_access->role == 10)
             {
                 $organizator_model = Model_Orm_Participant::query()
                     ->where('event_id', $event_id)
@@ -229,7 +229,7 @@ class Controller_Participant  extends Controller_Public
      */
     public function action_request($event_id = null)
     {
-        // check if user has access to deleting organizator
+        // check if user has access to make a request for organizator
         if (Auth::has_access('participant.request'))
         {
             is_null($event_id) and Response::redirect('/');
@@ -327,9 +327,9 @@ class Controller_Participant  extends Controller_Public
                 ->and_where_open()
                     ->where('user_id', $cur_user_id)
                 ->and_where_close();
-            $organizator_obj = $query->get_one();
+            $has_access = $query->get_one();
 
-            if ( ! empty($organizator_obj))
+            if ( ! empty($has_access) and $has_access->role != 0)
             {
                 // user has organizator access, delete given request
                 $query = Model_Orm_Request::query()
@@ -380,9 +380,9 @@ class Controller_Participant  extends Controller_Public
                 ->and_where_open()
                     ->where('user_id', $cur_user_id)
                 ->and_where_close();
-            $organizator_obj = $query->get_one();
+            $has_access = $query->get_one();
 
-            if ( ! empty($organizator_obj))
+            if ( ! empty($has_access) and $has_access->role != 0)
             {
                 // user has organizator access, add organizer and delete given request
                 $organizator = array(
@@ -403,6 +403,147 @@ class Controller_Participant  extends Controller_Public
 
                 Session::set_flash('success', 'Lietotājs veiksmīgi pievienots kā organizators.');
                 Response::redirect('event/view/'.$event_id);
+            }
+            else
+            {
+                // user doesn't have organizator access
+                $error[] = 'Piedod, bet tev organizatora pieeja šim pasākumam.';
+                Session::set_flash('errors', $error);
+                Response::redirect('event/view/'.$event_id);
+            }
+        }
+        else
+        {
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Sends an invite email to user outside of system
+     *
+     * @param string $event_id is ID of event to which event request is adressed
+     */
+    public function action_email($event_id = null)
+    {
+        // chech if user has access to invited organizers via email
+        if (Auth::has_access('participant.email'))
+        {
+            is_null($event_id) and Response::redirect('/');
+
+            $query = Model_Orm_Event::query()->where('event_id', $event_id);
+            $event_obj = $query->get_one();
+            if (empty($event_obj))
+            {
+                // no event with such event id
+                $error[] = 'Piedod, bet pasākums ar šādu ID neeksistē.';
+                Session::set_flash('errors', $error);
+                Response::redirect('/');
+            }
+
+            // check if user has organizator access
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+
+            $query = Model_Orm_Participant::query()
+                ->where('event_id', $event_id)
+                ->and_where_open()
+                    ->where('user_id', $user_id)
+                ->and_where_close();
+            $has_access = $query->get_one();
+
+            if ( ! empty($has_access) and $has_access->role != 0)
+            {
+                if (Input::method() == 'POST')
+                {
+                    // form submited, validate it
+                    $is_error = false;
+
+                    if (Input::post('email'))
+                    {
+                        // Email set, check if its valid email format
+                        if ( ! filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                        {
+                            // Email isn't valid email format
+                            $is_error = true;
+                            $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                        }
+
+                    }
+                    else
+                    {
+                        // Email wans't set
+                        $is_error = true;
+                        $errors[] = 'Lūdzu ievadiet e-pastu!';
+                    }
+
+                    if (Input::post('message'))
+                    {
+                        // message set, check if not too long
+                        if (strlen(Input::post('message')) > 500)
+                        {
+                            // message to long
+                            $is_error = true;
+                            $errors[] = 'Ziņa ir pārak gara!';
+                        }
+                    }
+                    else
+                    {
+                        // message wasn't set
+                        $is_error = true;
+                        $errors[] = 'Lūdzu ievadiet ziņu!';
+                    }
+
+                    if ( ! $is_error)
+                    {
+                        // invite form valid, use swift mailer to send invite via email to recipent
+                        require_once 'lib/swift_required.php';
+
+                        // use gmail smtp server for email sending
+                        $transport = Swift_SmtpTransport::newInstance('smtp.gmail.com', 465, "ssl")
+                          ->setUsername('notikumiem')
+                          ->setPassword('notikumiempassword');
+
+                        $mailer = Swift_Mailer::newInstance($transport);
+
+                        // create access key, for user to become organizator after registration
+                        $access_key = md5(Input::post('email') . $event_id);
+
+                        $event_title = $event_obj->title;
+                        $subject = "kļūsti par organizatoru pasākumā $event_title";
+
+                        $body = "Sveiks,\n\nTu esi uzaicināts kļūt par organizatoru pasākumā $event_title\n\n"
+                               .Input::post('message')
+                               ."\n\nnotikumiem.lv ir pasākumu organizēšanas vietne, kura palīdzēs tev parocīgāk noorganizēt jebkāka veida pasākumu. Spied zemāk redzamajā saitē un reģistrējies\n\n"
+                               .Uri::create('user/create/'.$event_id.'/'.$access_key);
+
+                        $message = Swift_Message::newInstance('Test Subject')
+                          ->setFrom(array('notikumiem@gmail.com' => 'notikumiem.lv'))
+                          ->setTo(array(Input::post('email')))
+                          ->setSubject($subject)
+                          ->setBody($body);
+
+                        $result = $mailer->send($message);
+
+                        Session::set_flash('success', 'Lietotājam veiksmīgi nosūtīts uzaicinājums uz '.Input::post('email'));
+                        Response::redirect('event/view/'.$event_id);
+                    }
+                    else
+                    {
+                        // Some error in validation, render form with errors
+                        Session::set_flash('errors', $errors);
+                        $this->template->page_title = 'Nosūti uzaicinājumu';
+                        $this->template->content = View::forge('participant/send');
+                        $this->template->content->set('event_id', $event_id);
+                    }
+                }
+                else
+                {
+                    // no form submited, redner form view
+                    $this->template->page_title = 'Nosūti uzaicinājumu';
+                    $this->template->content = View::forge('participant/send');
+                    $this->template->content->set('event_id', $event_id);
+
+                }
             }
             else
             {

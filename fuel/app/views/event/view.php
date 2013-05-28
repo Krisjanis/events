@@ -365,6 +365,8 @@
                 <input class="span2" type="text" name="organizator" placeholder="Ievadi lietotāja vārdu ..." /><button class="btn" type="submit">Meklēt!</button>
             </div>
         <?php echo Form::close(); ?>
+        <h3>Vai pievieno no e-pasta</h3>
+        <?php echo Html::anchor('participant/email/'.$event['id'], 'Pievienot!', array('class' => 'btn')); ?>
         <h3>Labot atribūtus</h3>
         <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn')); ?>
     <?php else : ?>

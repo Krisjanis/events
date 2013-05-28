@@ -162,8 +162,10 @@ class Controller_User extends Controller_Public
 
     /**
      * Validates register form and creates new user
+     *
+     * @param string $event_id is ID of event to which event request is adressed
      */
-    public function action_create()
+    public function action_create($event_id = null)
     {
         if (Input::method() == 'POST')
         {
@@ -265,6 +267,12 @@ class Controller_User extends Controller_Public
                     'id'        => $id
                 ));
                 $user->save();
+
+                // check if user has registered after invite form email
+                if ( ! is_null($event_id))
+                {
+                    // check if key valid for adding as organizator
+                }
 
                 // login with user
                 Auth::instance()->force_login($id);
