@@ -35,7 +35,11 @@
                         <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                         <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                     <?php endif; ?>
-                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                    <?php if ($comment['author'] != 0) : ?>
+                        <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                    <?php else : ?>
+                        <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                    <?php endif; ?>
                     <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                 </p>
                 <p class="comment"><?php echo $comment['message']; ?></p>
@@ -64,7 +68,11 @@
                                 <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                 <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                             <?php endif; ?>
-                            <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                            <?php if ($comment['author'] != 0) : ?>
+                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                            <?php else : ?>
+                                <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                            <?php endif; ?>
                             <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                         </p>
                         <p class="comment"><?php echo $comment['message']; ?></p>
@@ -93,7 +101,11 @@
                                 <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                 <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                             <?php endif; ?>
-                            <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                            <?php if ($comment['author'] != 0) : ?>
+                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                            <?php else : ?>
+                                <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                            <?php endif; ?>
                             <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                         </p>
                         <p class="comment"><?php echo $comment['message']; ?></p>
@@ -123,7 +135,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -153,7 +169,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -183,7 +203,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -214,7 +238,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -245,7 +273,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -276,7 +308,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -307,7 +343,11 @@
                                     <?php echo Html::anchor('comment/edit/'.$comment['id'].'/'.$event['id'], "<span class='label label-warning'>Labot  <i class='icon-edit icon-white'></i></span>", array('class' => 'pull-right comment-action')); ?>
                                     <?php echo Html::anchor('comment/delete/'.$comment['id'].'/'.$event['id'], "<span class='label label-important'>Dzēst  <i class='icon-trash icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst šo komentāru?')", 'class' => 'pull-right comment-action')); ?>
                                 <?php endif; ?>
-                                <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php if ($comment['author'] != 0) : ?>
+                                    <?php echo Html::anchor('user/view/'.$comment['author'], $comment['author_username'], array('class' => 'comment-author')); ?>
+                                <?php else : ?>
+                                    <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                                <?php endif; ?>
                                 <span class="comment-date"><?php echo $comment['created_at']; ?></span>
                             </p>
                             <p class="comment"><?php echo $comment['message']; ?></p>
@@ -324,7 +364,14 @@
     <h3>Organizatori</h3>
     <ul class="organizators">
     <?php if (isset($participants['author'])) : ?>
-        <li><?php echo $participants['author']['username']; ?> <span class='label label-info pull-right'>Autors</i></span></li>
+        <li>
+            <?php if ($participants['author']['id'] != 0) : ?>
+                <?php echo $participants['author']['username'].' '; ?>
+            <?php else : ?>
+                <?php echo '<span class="deleted-user">dzēsts lietotājs</span> '; ?>
+            <?php endif; ?>
+            <span class='label label-info pull-right'>Autors</i></span>
+        </li>
     <?php endif; ?>
     <?php if (isset($participants['organizators'])) : ?>
         <?php foreach ($participants['organizators'] as $organizator) : ?>
@@ -345,35 +392,41 @@
         <li><?php echo Html::anchor('tag/view/'.$tag['id'], "<span class='label label-info'>".$tag['title']."</span>"); ?></li>
         <?php endforeach; ?>
     </ul>
+    <?php if ($author_access and $event['type'] == 'private') : ?>
+        <h3>Pārveidot par publisku</h3>
+        <?php echo Html::anchor('event/change_to_public/'.$event['id'], 'Pārveidot!', array('class' => 'btn', 'onclick' => "return confirm('Vai tiešām vēlaties neatgriezeniski pārveidot pasākumu par publisku?')")); ?>
+    <?php endif; ?>
     <?php if ($organizator_access) : ?>
-        <?php if (isset($requests)) : ?>
-            <h3>Pieprasījumi kļūt par organizatoru</h3>
-            <ul class="organizators">
-            <?php foreach ($requests as $request) : ?>
-                <li>
-                    <?php echo Html::anchor('user/view/'.$request['id'], $request['username']); ?>
-                    <?php echo Html::anchor('participant/decline_request/'.$event['id'].'/'.$request['id'], "<span class='label label-important'><i class='icon-remove icon-white'></i></span>", array('class' => 'pull-right')); ?>
-                    <?php echo Html::anchor('participant/accept_request/'.$event['id'].'/'.$request['id'], "<span class='label label-success'><i class='icon-ok icon-white'></i></span>", array('class' => 'pull-right')); ?>
-                </li>
-            <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-        <?php echo Form::open('participant/add_organizator'); ?>
-            <h3>Pievienot organizatoru</h3>
-            <div class="input-append span3">
-                <input type="hidden" name="event_id" value="<?php echo $event['id']; ?>"/>
-                <input class="span2" type="text" name="organizator" placeholder="Ievadi lietotāja vārdu ..." /><button class="btn" type="submit">Meklēt!</button>
-            </div>
-        <?php echo Form::close(); ?>
-        <h3>Vai pievieno no e-pasta</h3>
-        <?php echo Html::anchor('participant/email/'.$event['id'], 'Pievienot!', array('class' => 'btn')); ?>
         <h3>Labot atribūtus</h3>
         <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn')); ?>
-    <?php else : ?>
+        <?php if ($event['type'] == 'public') : ?>
+            <?php if (isset($requests)) : ?>
+                <h3>Pieprasījumi kļūt par organizatoru</h3>
+                <ul class="organizators">
+                <?php foreach ($requests as $request) : ?>
+                    <li>
+                        <?php echo Html::anchor('user/view/'.$request['id'], $request['username']); ?>
+                        <?php echo Html::anchor('participant/decline_request/'.$event['id'].'/'.$request['id'], "<span class='label label-important'><i class='icon-remove icon-white'></i></span>", array('class' => 'pull-right')); ?>
+                        <?php echo Html::anchor('participant/accept_request/'.$event['id'].'/'.$request['id'], "<span class='label label-success'><i class='icon-ok icon-white'></i></span>", array('class' => 'pull-right')); ?>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+            <?php echo Form::open('participant/add_organizator'); ?>
+                <h3>Pievienot organizatoru</h3>
+                <div class="input-append span3">
+                    <input type="hidden" name="event_id" value="<?php echo $event['id']; ?>"/>
+                    <input class="span2" type="text" name="organizator" placeholder="Ievadi lietotāja vārdu ..." /><button class="btn" type="submit">Meklēt!</button>
+                </div>
+            <?php echo Form::close(); ?>
+            <h3>Vai pievieno no e-pasta</h3>
+            <?php echo Html::anchor('participant/email/'.$event['id'], 'Pievienot!', array('class' => 'btn')); ?>
+        <?php endif; ?>
+    <?php elseif ($event['type'] == 'public') : ?>
         <h3>Kļūsti par organizatoru</h3>
         <?php echo Html::anchor('participant/request/'.$event['id'], 'Nosūtīt pieprasījumu', array('class' => 'btn')); ?>
     <?php endif; ?>
-    <?php if (isset($participants['participants'])) : ?>
+    <?php if (isset($participants['participants']) and $event['type'] == 'public') : ?>
         <h3>Dalībnieki</h3>
         <ul class="organizators">
         <?php foreach ($participants['participants'] as $participant) : ?>

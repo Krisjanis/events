@@ -23,6 +23,13 @@
 <?php endforeach; ?>
 </ul>
 
+<?php echo Form::open('tag/search', array('class' => 'tag-search')); ?>
+<h2>Meklē birku</h2>
+<div class="input-append tag-search">
+    <input type="text" name="tags" placeholder="Atdali birkas ar komentāru" /><button class="btn" type="submit">Meklēt!</button>
+</div>
+<?php echo Form::close(); ?>
+
 <h2>Jaunākie pasākumi</h2>
 <?php foreach ($events as $event) : ?>
 <div class="event-thumb">

@@ -305,7 +305,7 @@ class Controller_Participant  extends Controller_Public
     }
 
     /**
-     * Decline given request to become organizator
+     * Decline given request to become participabnt
      *
      * @param string $event_id is ID of event to which the request is adresed
      * @param integer $user_id is ID of user which send the request
@@ -358,20 +358,20 @@ class Controller_Participant  extends Controller_Public
     }
 
     /**
-     * Accept request to become organizer
+     * Accept request to become participant
      *
      * @param string $event_id is ID of event to which event request is adressed
      * @param integer $user_id is ID of user which sent the request
      */
     public function action_accept_request($event_id = null, $user_id = null)
     {
-        // chech if user has access to accepting request
+        // check if user has access to accepting request
         if (Auth::has_access('participant.accpet_request'))
         {
             is_null($event_id) and Response::redirect('/');
             is_null($user_id) and Response::redirect('/');
 
-            // check if current user has organizator acces for given event
+            // check if current user has organizator access for given event
             $cur_user_id = Auth::instance()->get_user_id();
             $cur_user_id = $cur_user_id[1];
 
@@ -384,14 +384,14 @@ class Controller_Participant  extends Controller_Public
 
             if ( ! empty($has_access) and $has_access->role != 0)
             {
-                // user has organizator access, add organizer and delete given request
-                $organizator = array(
+                // user has organizator access, add participant and delete given request
+                $participant = array(
                     'event_id'  => $event_id,
                     'user_id'   => $user_id,
                     'role'      => 0
                 );
-                $new_organizator = Model_Orm_Participant::forge($organizator);
-                $new_organizator->save();
+                $new_participant = Model_Orm_Participant::forge($participant);
+                $new_participant->save();
 
                 $query = Model_Orm_Request::query()
                     ->where('event_id', $event_id)
@@ -461,7 +461,19 @@ class Controller_Participant  extends Controller_Public
                     if (Input::post('email'))
                     {
                         // Email set, check if its valid email format
-                        if ( ! filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                        if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                        {
+                                $query = Model_Orm_User::query()->where('email', Input::post('email'));
+                                $exist_email = $query->get_one();
+
+                            if ( ! empty($exist_email))
+                            {
+                                // Email allready is used
+                                $is_error = true;
+                                $errors[] = 'E-pasts jau tiek izmantot sistēmā!';
+                            }
+                        }
+                        else
                         {
                             // Email isn't valid email format
                             $is_error = true;
@@ -506,7 +518,20 @@ class Controller_Participant  extends Controller_Public
                         $mailer = Swift_Mailer::newInstance($transport);
 
                         // create access key, for user to become organizator after registration
-                        $access_key = md5(Input::post('email') . $event_id);
+                        $salt = mt_rand(0, mt_getrandmax());
+                        $access_key = md5($event_id.$salt);
+
+                        // save invite
+                        $invite = array (
+                            'sender_id'     => $user_id,
+                            'event_id'      => $event_id,
+                            'email'         => Input::post('email'),
+                            'message'       => Input::post('message'),
+                            'access_key'    => $access_key
+                        );
+
+                        $new_invite = Model_Orm_Invite::forge($invite);
+                        $new_invite->save();
 
                         $event_title = $event_obj->title;
                         $subject = "kļūsti par organizatoru pasākumā $event_title";
@@ -514,7 +539,7 @@ class Controller_Participant  extends Controller_Public
                         $body = "Sveiks,\n\nTu esi uzaicināts kļūt par organizatoru pasākumā $event_title\n\n"
                                .Input::post('message')
                                ."\n\nnotikumiem.lv ir pasākumu organizēšanas vietne, kura palīdzēs tev parocīgāk noorganizēt jebkāka veida pasākumu. Spied zemāk redzamajā saitē un reģistrējies\n\n"
-                               .Uri::create('user/create/'.$event_id.'/'.$access_key);
+                               .Uri::create('user/create/'.$access_key);
 
                         $message = Swift_Message::newInstance('Test Subject')
                           ->setFrom(array('notikumiem@gmail.com' => 'notikumiem.lv'))
@@ -522,7 +547,7 @@ class Controller_Participant  extends Controller_Public
                           ->setSubject($subject)
                           ->setBody($body);
 
-                        $result = $mailer->send($message);
+                        $mailer->send($message);
 
                         Session::set_flash('success', 'Lietotājam veiksmīgi nosūtīts uzaicinājums uz '.Input::post('email'));
                         Response::redirect('event/view/'.$event_id);

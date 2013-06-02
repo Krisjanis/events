@@ -68,8 +68,17 @@ a:hover {
     margin-left: 5px;
 }
 
+.comment-info .deleted-user {
+    padding-right: 20px;
+}
+
 .comment-author {
     padding-right: 20px;
+}
+
+.deleted-user {
+    font-style: italic;
+    color: #606060;
 }
 
 .comment-date {

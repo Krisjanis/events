@@ -17,7 +17,8 @@ class Model_Orm_Invite extends Orm\Model
         'recipient_id',
         'event_id',
         'email',
-        'message'
+        'message',
+        'access_key'
     );
 
     protected static $_belongs_to = array(

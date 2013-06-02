@@ -55,14 +55,24 @@
             <tr>
                 <td><?php echo $comment['id']; ?></td>
                 <td>
-                    <?php echo Html::anchor('user/view/'.$comment['author_id'], $comment['author']); ?>
+                    <?php if ($comment['author_id'] != 0) : ?>
+                        <?php echo Html::anchor('user/view/'.$comment['author_id'], $comment['author']); ?>
+                    <?php else : ?>
+                        <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                    <?php endif; ?>
                     <?php if (isset($comment['admin']) and $comment['admin']) : ?>
                     <i class="icon-exclamation-sign"></i>
                     <?php endif; ?>
                 </td>
                 <td><?php echo Html::anchor('event/view/'.$comment['event_id'], $comment['event_id']); ?></td>
                 <td><?php echo $comment['message']; ?></td>
-                <td class="table-actions"><?php echo Html::anchor('admin/block_comment/'.$comment['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst komentāru?')")); ?></td>
+                <td class="table-actions">
+                    <?php if ($comment['author_id'] != 0 and ! isset($comment['admin'])) : ?>
+                        <?php echo Html::anchor('admin/block_comment/'.$comment['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst komentāru?')")); ?>
+                    <?php else : ?>
+                        <?php echo Html::anchor('admin/delete_comment/'.$comment['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst komentāru?')")); ?>
+                    <?php endif; ?>
+                </td>
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -86,14 +96,24 @@
             <tr>
                 <td><?php echo $comment['id']; ?></td>
                 <td>
-                    <?php echo Html::anchor('user/view/'.$comment['author_id'], $comment['author']); ?>
+                    <?php if ($comment['author_id'] != 0) : ?>
+                        <?php echo Html::anchor('user/view/'.$comment['author_id'], $comment['author']); ?>
+                    <?php else : ?>
+                        <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                    <?php endif; ?>
                     <?php if (isset($comment['admin']) and $comment['admin']) : ?>
-                    <i class="icon-exclamation-sign"></i>
+                        <i class="icon-exclamation-sign"></i>
                     <?php endif; ?>
                 </td>
                 <td><?php echo Html::anchor('event/view/'.$comment['event_id'], $comment['event_id']); ?></td>
                 <td><?php echo $comment['message']; ?></td>
-                <td class="table-actions"><?php echo Html::anchor('admin/block_comment/'.$comment['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst komentāru?')")); ?></td>
+                <td class="table-actions">
+                     <?php if ($comment['author_id'] != 0 and ! isset($comment['admin'])) : ?>
+                        <?php echo Html::anchor('admin/block_comment/'.$comment['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst komentāru?')")); ?>
+                    <?php else : ?>
+                        <?php echo Html::anchor('admin/delete_comment/'.$comment['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst komentāru?')")); ?>
+                    <?php endif; ?>
+                </td>
             </tr>
         <?php endforeach; ?>
         </tbody>

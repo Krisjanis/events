@@ -19,8 +19,8 @@ class Controller_Comment extends Controller_Public
     {
         if (Auth::has_access('comment.create'))
         {
-            is_null($atr) and Response::redirect('event/view/'.$event_id);
-            is_null($event_id) and Response::redirect('event/view/'.$event_id);
+            is_null($atr) and Response::redirect('/');
+            is_null($event_id) and Response::redirect('/');
 
             $this->template->page_title = 'Pievieno komentāru!';
             $this->template->content = View::forge('comment/create');
@@ -73,7 +73,7 @@ class Controller_Comment extends Controller_Public
                     // check if comment isn't too long
                     if (strlen(Input::post('comment')) <= 300)
                     {
-                        // comments length is valid
+                        // comments length is valid, create it
                         $user_id = Auth::instance()->get_user_id();
                         $user_id = $user_id[1];
 
@@ -120,17 +120,11 @@ class Controller_Comment extends Controller_Public
      */
     public function action_view($atr = null, $event_id = null)
     {
-        is_null($atr) and Response::redirect('event/view/'.$event_id);
-        is_null($event_id) and Response::redirect('event/view/'.$event_id);
+        is_null($atr) and Response::redirect('/');
+        is_null($event_id) and Response::redirect('/');
 
         // get all comments for given attribute in given event
-        $query = Model_Orm_Comment::query()
-            ->order_by('comment_id', 'desc')
-            ->where('event_id', $event_id)
-            ->and_where_open()
-                ->where('attribute', $atr)
-            ->and_where_close();
-        $comments_obj = $query->get();
+        $comments_obj = Model_Orm_Comment::get_comment_by_event_and_attribute($event_id, $atr);
 
         // save each comment in array
         $comments = array();
@@ -142,22 +136,23 @@ class Controller_Comment extends Controller_Public
             $author = Model_Orm_User::find($comment->author_id);
             $comments[$i]['author_username'] = $author->username;
             $comments[$i]['message'] = $comment->message;
+
             // check if comment has been edited
             if (is_null($comment->edited_at)) {
-                // comment hasn't been edited get creation date
+                // comment hasn't been edited, get creation date
                 $date = Date::forge($comment->created_at);
                 $time_ago = 'Pirms ';
             }
             else
             {
-                // comment has been edited
+                // comment has been edited, get edition date
                 $date = Date::forge($comment->edited_at);
                 $time_ago = 'Labots pirms ';
             }
             $time_ago_string = Date::time_ago($date, Date::time()->get_timestamp(), 'second');
             $time_ago_value = explode(' ', $time_ago_string);
             $time_ago_value = $time_ago_value[0];
-            //var_dump($time_ago_value);
+
             if ($time_ago_value < 1)
             {
                 // just now
@@ -229,6 +224,7 @@ class Controller_Comment extends Controller_Public
             $i++;
         }
 
+        // check if function requested from other controller
         if( ! Request::is_hmvc())
         {
             Response::redirect('/');
@@ -256,9 +252,7 @@ class Controller_Comment extends Controller_Public
             $user_id = Auth::instance()->get_user_id();
             $user_id = $user_id[1];
 
-            $query = Model_Orm_Comment::query()
-                ->where('comment_id', $comment_id);
-            $comment_obj = $query->get_one();
+            $comment_obj = Model_Orm_Comment::get_comment($comment_id);
 
             // if comment found, check if has access to deleting
             if ( ! empty($comment_obj))
@@ -302,6 +296,12 @@ class Controller_Comment extends Controller_Public
         }
     }
 
+    /**
+     * Edits given comment
+     *
+     * @param integer $comment_id is ID of comment to be edited
+     * @param string $event_id is ID of event, were given comment is published
+     */
     public function action_edit($comment_id = null, $event_id = null)
     {
         // check if user has access to deleting comment
@@ -310,9 +310,7 @@ class Controller_Comment extends Controller_Public
             is_null($event_id) and Response::redirect('/');
             is_null($comment_id) and Response::redirect('event/view/'.$event_id);
 
-            $query = Model_Orm_Comment::query()
-                    ->where('comment_id', $comment_id);
-            $comment_obj = $query->get_one();
+            $comment_obj = Model_Orm_Comment::get_comment($comment_id);
 
             if (Input::method() == 'POST')
             {
@@ -386,7 +384,7 @@ class Controller_Comment extends Controller_Public
                 else
                 {
                     // no comment found
-                    $error[] = 'Piedod, bet komentārs netika atrasts.';
+                    $error[] = 'Komentārs netika atrasts.';
                     Session::set_flash('errors', $error);
                     Response::redirect('event/view/'.$event_id);
                 }

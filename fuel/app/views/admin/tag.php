@@ -75,16 +75,24 @@
                 <td><?php echo $tag['id']; ?></td>
                 <td><?php echo $tag['title']; ?></td>
                 <td>
-                    <?php echo Html::anchor('user/view/'.$tag['author_id'], $tag['author']); ?>
+                    <?php if ($tag['author_id'] != 0) : ?>
+                        <?php echo Html::anchor('user/view/'.$tag['author_id'], $tag['author']); ?>
+                    <?php else : ?>
+                        <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                    <?php endif; ?>
                     <?php if (isset($tag['admin']) and $tag['admin']) : ?>
                     <i class="icon-exclamation-sign"></i>
                     <?php endif; ?>
                 </td>
                 <td class="table-actions">
-                    <?php if (isset($tag['admin']) and $tag['admin']) : ?>
-                    <span class="label">Operatora pievienota birka <i class='icon-info-sign icon-white'></i></span>
+                    <?php if ($tag['author_id'] != 0) : ?>
+                        <?php if (isset($tag['admin']) and $tag['admin']) : ?>
+                            <?php echo Html::anchor('admin/delete_tag/'.$tag['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst birku?')")); ?>
+                        <?php else : ?>
+                            <?php echo Html::anchor('admin/demote_tag/'.$tag['id'], "<span class='label label-important'>Noņemt prasmīgu un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt pazemināt lietotāja statusu par lietotāju un dzēst birku?')")); ?>
+                        <?php endif; ?>
                     <?php else : ?>
-                    <?php echo Html::anchor('admin/block_event/'.$tag['id'], "<span class='label label-important'>Noņemt prasmīgu un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst pasākumu?')")); ?>
+                        <?php echo Html::anchor('admin/delete_tag/'.$tag['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst birku?')")); ?>
                     <?php endif; ?>
                 </td>
             </tr>

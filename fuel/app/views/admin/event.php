@@ -51,12 +51,22 @@
                 <td><?php echo Html::anchor('event/view/'.$event['id'], $event['id']); ?></td>
                 <td><?php echo $event['title']; ?></td>
                 <td>
-                    <?php echo Html::anchor('user/view/'.$event['author_id'], $event['author']); ?>
+                    <?php if ($event['author_id'] != 0) : ?>
+                        <?php echo Html::anchor('user/view/'.$event['author_id'], $event['author']); ?>
+                    <?php else : ?>
+                        <?php echo '<span class="deleted-user">dzēsts lietotājs</span>'; ?>
+                    <?php endif; ?>
                     <?php if (isset($event['admin']) and $event['admin']) : ?>
                     <i class="icon-exclamation-sign"></i>
                     <?php endif; ?>
                 </td>
-                <td class="table-actions"><?php echo Html::anchor('admin/block_event/'.$event['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst pasākumu?')")); ?></td>
+                <td class="table-actions">
+                    <?php if ($event['author_id'] != 0) : ?>
+                        <?php echo Html::anchor('admin/block_event/'.$event['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst pasākumu?')")); ?>
+                    <?php else : ?>
+                        <?php echo Html::anchor('admin/delete_event/'.$event['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst pasākumu?')")); ?>
+                    <?php endif; ?>
+                </td>
             </tr>
             <?php $i++; ?>
         <?php endforeach; ?>

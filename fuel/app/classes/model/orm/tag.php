@@ -28,13 +28,13 @@ class Model_Orm_Tag extends Orm\Model
         )
     );
 
-//    protected static $_has_many = array(
-//        'events' => array(
-//            'key_from'       => 'tag_id',
-//            'model_to'       => 'Model_Orm_hasTag',
-//            'key_to'         => 'tag_id',
-//            'cascade_save'   => true,
-//            'cascade_delete' => false
-//        )
-//    );
+    protected static $_has_many = array(
+        'events' => array(
+            'key_from'       => 'tag_id',
+            'model_to'       => 'Model_Orm_hasTag',
+            'key_to'         => 'tag_id',
+            'cascade_save'   => true,
+            'cascade_delete' => false
+        )
+    );
 }

@@ -291,40 +291,49 @@ class Controller_Event extends Controller_Public
                     $tags = explode(',', Input::post('tags'));
                     if (count($tags) <= 7)
                     {
-                        // check if any tag exists
-                        $valid_tag = array();
-                        $error_tags = array();
-                        foreach ($tags as $tag)
+                        if (count($tags) >= 2)
                         {
-                            $tag = trim($tag);
-                            $query = Model_Orm_Tag::query()->where('title', $tag);
-                            $tag_obj = $query->get_one();
-
-                            if ( ! empty($tag_obj))
+                            // check if any tag exists
+                            $valid_tag = array();
+                            $error_tags = array();
+                            foreach ($tags as $tag)
                             {
-                                // tag exists, add it
-                                $valid_tag[] = $tag;
-                            }
-                            else
-                            {
-                                // tag doesn't exists
-                                $is_error = true;
-                                // check if poweruser or admin
-                                $user_group = Auth::instance()->get_groups();
-                                $user_group = $user_group[0][1];
+                                $tag = trim($tag);
+                                $query = Model_Orm_Tag::query()->where('title', $tag);
+                                $tag_obj = $query->get_one();
 
-                                if ($user_group == 10 or $user_group == 100)
+                                if ( ! empty($tag_obj))
                                 {
-                                    // user is power user or admin
-                                    // add tags for possible adding
-                                    $error_tags[] = $tag;
+                                    // tag exists, add it
+                                    $valid_tag[] = $tag;
                                 }
                                 else
                                 {
-                                    // user doesn't have access to create new tag
-                                    $errors[] = 'Birka "'.$tag.'" neeksistē!';
+                                    // tag doesn't exists
+                                    $is_error = true;
+                                    // check if poweruser or admin
+                                    $user_group = Auth::instance()->get_groups();
+                                    $user_group = $user_group[0][1];
+
+                                    if ($user_group == 10 or $user_group == 100)
+                                    {
+                                        // user is power user or admin
+                                        // add tags for possible adding
+                                        $error_tags[] = $tag;
+                                    }
+                                    else
+                                    {
+                                        // user doesn't have access to create new tag
+                                        $errors[] = 'Birka "'.$tag.'" neeksistē!';
+                                    }
                                 }
                             }
+                        }
+                        else
+                        {
+                            // tag must have at least 2 tags
+                            $is_error = true;
+                            $errors[] = 'Pasākumam nepieciešams vismaz 2 birkas!';
                         }
                     }
                     else
@@ -521,7 +530,7 @@ class Controller_Event extends Controller_Public
                         $organizator = array(
                             'event_id'  => $new_event->event_id,
                             'user_id'   => $user_id[1],
-                            'is_author' => 10
+                            'role' => 10
                         );
                         $new_participant = Model_Orm_Participant::forge($organizator);
                         $new_participant->save();
@@ -598,7 +607,7 @@ class Controller_Event extends Controller_Public
     /**
      * Edit atributes of given event
      *
-     * @param integer $event_id is ID of event needed to be edited
+     * @param string $event_id is ID of event needed to be edited
      */
     public function action_edit_attribute($event_id = null)
     {
@@ -1057,6 +1066,66 @@ class Controller_Event extends Controller_Public
         {
             // user not logged in, redirect to login form
             Response::redirect('user/login');
+        }
+    }
+
+    /**
+     * Changes given private event to public
+     *
+     * @param string $event_id is ID of private event needed to be changed
+     */
+    public function action_change_to_public($event_id = null)
+    {
+        // check if user has access to accepting request
+        if (Auth::has_access('event.change_to_public'))
+        {
+            is_null($event_id) and Response::redirect('/');
+
+            // check if current user has organizator access for given event
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+
+            $query = Model_Orm_Participant::query()
+                ->where('event_id', $event_id)
+                ->and_where_open()
+                    ->where('user_id', $user_id)
+                ->and_where_close();
+            $has_access = $query->get_one();
+
+            if ( ! empty($has_access) and $has_access->role == 10)
+            {
+                // user has organizator access, check if event is private
+                $query = Model_Orm_Event::query()->where('event_id', $event_id);
+                $event = $query->get_one();
+
+                if ( ! empty($event) and $event->type == 'private')
+                {
+                    // event is private, change it to public
+                    $event->type = 'public';
+                    $event->save();
+
+                    Session::set_flash('success', 'Pāsākums veiksmīgi nomainīts kā publisks.');
+                    Response::redirect('event/view/'.$event_id);
+                }
+                else
+                {
+                    // event isn't private type
+                    $error[] = 'Pasākums nav privāts.';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('event/view/'.$event_id);
+                }
+            }
+            else
+            {
+                // user doesn't have organizator access
+                $error[] = 'Piedod, bet tev organizatora pieeja šim pasākumam.';
+                Session::set_flash('errors', $error);
+                Response::redirect('event/view/'.$event_id);
+            }
+        }
+        else
+        {
+            Response::redirect('/');
         }
     }
 }

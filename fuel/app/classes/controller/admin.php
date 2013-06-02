@@ -2,7 +2,8 @@
 /**
  * The Admin Controller.
  *
- * Admin conntroller renders admin panel
+ * Admin conntroller renders admin panel with event, user, comment and tag manu,
+ * where admin can manage them
  *
  * @package  app
  * @extends  Public
@@ -130,7 +131,6 @@ class Controller_Admin extends Controller_Public
 
             if ( ! empty($event_obj))
             {
-                // if event found, delete all data about it and block its author
                 // find its author
                 $query = Model_Orm_Participant::query()
                     ->where('event_id', $event_id)
@@ -143,9 +143,9 @@ class Controller_Admin extends Controller_Public
                 $query = Model_Orm_User::query()->where('user_id', $author_id);
                 $user_obj = $query->get_one();
 
-                if ($user_obj->group != 100)
+                if ($user_obj->group != 100 and $author_id != 0)
                 {
-                    // user not admin
+                    // user not admin or deleted user
                     // delete all invites to this event
                     $query = Model_Orm_Invite::query()->where('event_id', $event_id);
                     $invite_obj = $query->get();
@@ -165,8 +165,7 @@ class Controller_Admin extends Controller_Public
                     }
 
                     // delete all comments to this event
-                    $query = Model_Orm_Comment::query()->where('event_id', $event_id);
-                    $comment_obj = $query->get();
+                    $comment_obj = Model_Orm_Comment::get_comment_by_event($event_id);
 
                     foreach ($comment_obj as $comment)
                     {
@@ -180,6 +179,33 @@ class Controller_Admin extends Controller_Public
                     foreach ($request_obj as $request)
                     {
                         $request->delete();
+                    }
+
+                    // delete all tag relation to this event
+                    $query = Model_Orm_HasTag::query()->where('event_id', $event_id);
+                    $tag_relation_obj = $query->get();
+                    $tag_ids = array();
+
+                    foreach ($tag_relation_obj as $tag)
+                    {
+                        DB::delete('has_tag')
+                            ->where('tag_id', '=', $tag->tag_id)
+                            ->and_where_open()
+                                ->where('event_id', $tag->event_id)
+                            ->and_where_close()
+                            ->execute();
+
+                        $tag_ids[] = $tag->tag_id;
+                    }
+
+                    // deincrease tag count for each tag
+                    foreach ($tag_ids as $tag)
+                    {
+                        $query = Model_Orm_Tag::query()->where('tag_id', $tag->tag_id);
+                        $tag_obj = $query->get_one();
+                        $count = $tag_obj->event_count;
+                        $tag_obj->event_count = --$count;
+                        $tag_obj->save();
                     }
 
                     // block author
@@ -201,7 +227,7 @@ class Controller_Admin extends Controller_Public
                 else
                 {
                     // event author is admin, can't block admin
-                    $error[] = 'Šis ir operātora pasākums, to nevar bloķēt un dzēst!';
+                    $error[] = 'Šis ir operātora vai dzēsta lietotāja pasākums, to nevar bloķēt un dzēst!';
                     Session::set_flash('errors', $error);
                     Response::redirect('admin/event');
                 }
@@ -215,6 +241,109 @@ class Controller_Admin extends Controller_Public
             }
 
             Session::set_flash('success', 'Pasākums izdzēsts un autors bloķēts!');
+            Response::redirect('admin/event');
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Only deletes given event not blocking its author
+     *
+     * @param string $event_id is id of event to be deleted
+     */
+    public function action_delete_event($event_id = null)
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.delete_event'))
+        {
+            // user has access to admin panel, check if no id given redirect to panel
+            is_null($event_id) and Response::redirect('admin/event');
+
+            // get needed event
+            $query = Model_Orm_Event::query()->where('event_id', $event_id);
+            $event_obj = $query->get_one();
+
+            if ( ! empty($event_obj))
+            {
+                // user not admin or deleted user
+                // delete all invites to this event
+                $query = Model_Orm_Invite::query()->where('event_id', $event_id);
+                $invite_obj = $query->get();
+
+                foreach ($invite_obj as $invite)
+                {
+                    $invite->delete();
+                }
+
+                // delete all participants for this event
+                $query = Model_Orm_Participant::query()->where('event_id', $event_id);
+                $participant_obj = $query->get();
+
+                foreach ($participant_obj as $participant)
+                {
+                    $participant->delete();
+                }
+
+                // delete all comments to this event
+                $comment_obj = Model_Orm_Comment::get_comment_by_event($event_id);
+
+                foreach ($comment_obj as $comment)
+                {
+                    $comment->delete();
+                }
+
+                // delete all requests to this event
+                $query = Model_Orm_Request::query()->where('event_id', $event_id);
+                $request_obj = $query->get();
+
+                foreach ($request_obj as $request)
+                {
+                    $request->delete();
+                }
+
+                // delete all tag relation to this event
+                $query = Model_Orm_HasTag::query()->where('event_id', $event_id);
+                $tag_relation_obj = $query->get();
+                $tag_ids = array();
+
+                foreach ($tag_relation_obj as $tag)
+                {
+                    DB::delete('has_tag')
+                        ->where('tag_id', '=', $tag->tag_id)
+                        ->and_where_open()
+                            ->where('event_id', $tag->event_id)
+                        ->and_where_close()
+                        ->execute();
+
+                    $tag_ids[] = $tag->tag_id;
+                }
+
+                // deincrease tag count for each tag
+                foreach ($tag_ids as $tag)
+                {
+                    $query = Model_Orm_Tag::query()->where('tag_id', $tag);
+                    $tag_obj = $query->get_one();
+                    $count = $tag_obj->event_count;
+                    $tag_obj->event_count = --$count;
+                    $tag_obj->save();
+                }
+
+                // delete event
+                $event_obj->delete();
+            }
+            else
+            {
+                // event no longer exists
+                $error[] = 'Šāds pasāsums vairs neeksistē!';
+                Session::set_flash('errors', $error);
+                Response::redirect('admin/event');
+            }
+
+            Session::set_flash('success', 'Pasākums izdzēsts!');
             Response::redirect('admin/event');
         }
         else
@@ -293,6 +422,12 @@ class Controller_Admin extends Controller_Public
                 $i = 0;
                 foreach ($user_obj as $user)
                 {
+                    // don't show deleted user
+                    if ($user->user_id == 0)
+                    {
+                        break;
+                    }
+
                     $users[$i]['id'] = $user->user_id;
                     $users[$i]['username'] = $user->username;
                     ! is_null($user->name) and $users[$i]['name'] = $user->name;
@@ -337,7 +472,7 @@ class Controller_Admin extends Controller_Public
     /**
      * Changes blocked users group to user
      *
-     * @param int $user_id is id of blocked user to be unblocked
+     * @param integer $user_id is id of blocked user to be unblocked
      */
     public function action_unblock_user($user_id = null)
     {
@@ -399,7 +534,7 @@ class Controller_Admin extends Controller_Public
     /**
      * Blocks user
      *
-     * @param int $user_id id of user to be blocked
+     * @param integer $user_id id of user to be blocked
      */
     public function action_block_user($user_id = null)
     {
@@ -472,7 +607,7 @@ class Controller_Admin extends Controller_Public
     /**
      * Changes users group to power user
      *
-     * @param int $user_id is id of user to be promoted to power user
+     * @param integer $user_id is id of user to be promoted to power user
      */
     public function action_power_user($user_id = null)
     {
@@ -607,7 +742,7 @@ class Controller_Admin extends Controller_Public
     /**
      * Changes admins group to power user
      *
-     * @param int $user_id is id of power user to be changed to user
+     * @param integer $user_id is id of power user to be changed to user
      */
     public function action_demote_admin($user_id = null)
     {
@@ -696,8 +831,7 @@ class Controller_Admin extends Controller_Public
                 if (Input::post('search_type') == 'event')
                 {
                     // search after event, search given event comments
-                    $query = Model_Orm_Comment::query()->where('event_id', Input::post('value'));
-                    $comment_obj = $query->get();
+                    $comment_obj = Model_Orm_Comment::get_comment_by_event(Input::post('value'));;
 
                     if (empty($comment_obj))
                     {
@@ -730,8 +864,7 @@ class Controller_Admin extends Controller_Public
                         $user_id = $user_obj->user_id;
                     }
 
-                    $query = Model_Orm_Comment::query()->where('author_id', $user_id);
-                    $comment_obj = $query->get();
+                    $comment_obj = Model_Orm_Comment::get_comment_by_user($user_id);
 
                     if (empty($comment_obj))
                     {
@@ -757,8 +890,8 @@ class Controller_Admin extends Controller_Public
                         Response::redirect('admin/comment');
                     }
 
-                    // not mepty value, get comments
-                    $comment_obj = DB::query("SELECT * FROM `comments` WHERE `message` LIKE '%".Input::post('value')."%'")->as_object('Model_Orm_Comment')->execute();
+                    // not empty value, get comments
+                    $comment_obj = Model_Orm_Comment::get_comment_by_string(Input::post('value'));
 
                     if (empty($comment_obj) or Input::post('value') == '' )
                     {
@@ -795,10 +928,7 @@ class Controller_Admin extends Controller_Public
             else
             {
                 // no form submited, render recent comments
-                $query = Model_Orm_Comment::query()
-                    ->order_by('created_at', 'desc')
-                    ->limit(20);
-                $comment_obj = $query->get();
+                $comment_obj = Model_Orm_Comment::get_recenty_comments();
 
                 $comments = array();
                 $i = 0;
@@ -816,10 +946,7 @@ class Controller_Admin extends Controller_Public
                 }
 
                 // get recent edited comments
-                $query = Model_Orm_Comment::query()
-                    ->order_by('edited_at', 'desc')
-                    ->limit(20);
-                $comment_obj = $query->get();
+                $comment_obj = Model_Orm_Comment::get_recently_edited_comments();
 
                 $newest_edited_comments = array();
                 $i = 0;
@@ -854,6 +981,11 @@ class Controller_Admin extends Controller_Public
         isset($newest_edited_comments) and $this->template->content->panel->set('newest_edited_comments', $newest_edited_comments);
     }
 
+    /**
+     * Deletes given comment and blocks its author
+     *
+     * @param integer $comment_id is ID of comment to be deleted
+     */
     public function action_block_comment($comment_id = null)
     {
         // check if has admin access
@@ -873,7 +1005,7 @@ class Controller_Admin extends Controller_Public
                 $query = Model_Orm_User::query()->where('user_id', $comment_obj->author_id);
                 $user_obj = $query->get_one();
 
-                if ($user_obj->group != 100)
+                if ($user_obj->group != 100 and $comment_obj->author_id != 0)
                 {
                     // user not admin, delete comment
                     $comment_obj->delete();
@@ -894,7 +1026,7 @@ class Controller_Admin extends Controller_Public
                 else
                 {
                     // event author is admin, can't block admin
-                    $error[] = 'Šis ir operātora komentārs, to nevar bloķēt un dzēst!';
+                    $error[] = 'Šis ir operātora vai dzēsta lietotāja komentārs, to nevar bloķēt un dzēst!';
                     Session::set_flash('errors', $error);
                     Response::redirect('admin/comment');
                 }
@@ -917,6 +1049,49 @@ class Controller_Admin extends Controller_Public
         }
     }
 
+    /**
+     * Only deletes comment, not blocking its author
+     *
+     * @param integer $comment_id is ID of comment to be deleted
+     */
+    public function action_delete_comment($comment_id)
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.delete_comment'))
+        {
+            // user has access to admin panel, check if no id given redirect to panel
+            is_null($comment_id) and Response::redirect('admin/comment');
+
+            // get needed comment
+            $comment_obj = Model_Orm_Comment::get_comment($comment_id);
+
+            if ( ! empty($comment_obj))
+            {
+                // delete comment
+                $comment_obj->delete();
+
+            }
+            else
+            {
+                // comment no longer exists
+                $error[] = 'Šis komentārs vairs neeksistē!';
+                Session::set_flash('errors', $error);
+                Response::redirect('admin/comment');
+            }
+
+            Session::set_flash('success', 'Komentārs izdzēsts!');
+            Response::redirect('admin/comment');
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Shows recently added users
+     */
     public function action_tag()
     {
         // check if has admin access
@@ -996,6 +1171,10 @@ class Controller_Admin extends Controller_Public
         isset($tags) and $this->template->content->panel->set('tags', $tags);
     }
 
+
+    /**
+     * Creates new tag from admin panel
+     */
     public function action_tag_create()
     {
         if (Auth::has_access('tag.create'))
@@ -1046,6 +1225,140 @@ class Controller_Admin extends Controller_Public
         }
         else
         {
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Delete tag and demote it authors status from power user to user
+     *
+     * @param integer $tag_id is ID of tag, to be deleted
+     */
+    public function action_demote_tag($tag_id = null)
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.demote_tag'))
+        {
+            // user has access to admin panel, check if no id given redirect to panel
+            is_null($tag_id) and Response::redirect('admin/tag');
+
+            // get needed tag
+            $query = Model_Orm_Tag::query()->where('tag_id', $tag_id);
+            $tag_obj = $query->get_one();
+
+            if ( ! empty($tag_obj))
+            {
+                // if tag found, delete it, its relations to events and demote its author
+                // check if author is not admin
+                $query = Model_Orm_User::query()->where('user_id', $tag_obj->author_id);
+                $user_obj = $query->get_one();
+
+                if ($user_obj->group != 100 and $tag_obj->author_id != 0)
+                {
+                    // user not adminor deleted user, delete its relations to event
+                    $query = Model_Orm_HasTag::query()->where('tag_id', $tag_obj->tag_id);
+                    $tag_relation_obj = $query->get();
+
+                    foreach ($tag_relation_obj as $tag)
+                    {
+                        DB::delete('has_tag')
+                        ->where('tag_id', '=', $tag->tag_id)
+                        ->and_where_open()
+                            ->where('event_id', $tag->event_id)
+                        ->and_where_close()
+                        ->execute();
+                    }
+
+                    // delete tag
+                    $tag_obj->delete();
+
+                    // demote author
+                    $user_obj->group = 1;
+                    $user_obj->save();
+
+                    // send author an alert
+                    $alert = array(
+                        'recipient_id'  => $user_obj->user_id,
+                        'type'   => 'demote',
+                        'message' => 'Tu savā pievienotajā birkā pārkāpi vietnes noteikumus, birka tika izdzēsta un tavs status pazemināts par lietotāju!'
+                    );
+                    $new_alert = Model_Orm_Alert::forge($alert);
+                    $new_alert->save();
+                }
+                else
+                {
+                    // event author is admin, can't block admin
+                    $error[] = 'Šī ir operātora vai dzēsta lietotāja birka, to nevar pazemināt un dzēst!';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('admin/tag');
+                }
+            }
+            else
+            {
+                // comment no longer exists
+                $error[] = 'Šī birka vairs neeksistē!';
+                Session::set_flash('errors', $error);
+                Response::redirect('admin/tag');
+            }
+
+            Session::set_flash('success', 'Birka izdzēsta un autora status pazemināts!');
+            Response::redirect('admin/tag');
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Deleted tag not demoting is athor statuss
+     *
+     * @param integer $tag_id is ID of tag, to be deleted
+     */
+    public function action_delete_tag($tag_id = null)
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.delete_tag'))
+        {
+            // user has access to admin panel, check if no id given redirect to panel
+            is_null($tag_id) and Response::redirect('admin/tag');
+
+            // get needed tag
+            $query = Model_Orm_Tag::query()->where('tag_id', $tag_id);
+            $tag_obj = $query->get_one();
+
+            if ( ! empty($tag_obj))
+            {
+                //  delete its relations to event
+                $query = Model_Orm_HasTag::query()->where('tag_id', $tag_obj->tag_id);
+                $tag_relation_obj = $query->get();
+
+                foreach ($tag_relation_obj as $tag)
+                {
+                    DB::delete('has_tag')
+                        ->where('tag_id', '=', $tag->tag_id)
+                        ->and_where_open()
+                            ->where('event_id', $tag->event_id)
+                        ->and_where_close()
+                        ->execute();
+                }
+                $tag_obj->delete();
+            }
+            else
+            {
+                // comment no longer exists
+                $error[] = 'Šī birka vairs neeksistē!';
+                Session::set_flash('errors', $error);
+                Response::redirect('admin/tag');
+            }
+
+            Session::set_flash('success', 'Birka izdzēsta un autora status pazemināts!');
+            Response::redirect('admin/tag');
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
             Response::redirect('/');
         }
     }

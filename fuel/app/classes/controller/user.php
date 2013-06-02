@@ -163,9 +163,9 @@ class Controller_User extends Controller_Public
     /**
      * Validates register form and creates new user
      *
-     * @param string $event_id is ID of event to which event request is adressed
+     * @param string $access_key is hash for validating oganizator adding after registering
      */
-    public function action_create($event_id = null)
+    public function action_create($access_key = null)
     {
         if (Input::method() == 'POST')
         {
@@ -200,11 +200,8 @@ class Controller_User extends Controller_Public
                 if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
                 {
                     // Email set, check if email exists
-                    $exist_email = Model_Orm_User::find('all', array(
-                        'where' => array(
-                            array('email', Input::post('email'))
-                        ),
-                    ));
+                    $query = Model_Orm_User::query()->where('email', Input::post('email'));
+                    $exist_email = $query->get_one();
 
                     if ( ! empty($exist_email))
                     {
@@ -268,10 +265,32 @@ class Controller_User extends Controller_Public
                 ));
                 $user->save();
 
-                // check if user has registered after invite form email
-                if ( ! is_null($event_id))
+                // check if user has registered from invite form email
+                if ( ! is_null($access_key))
                 {
                     // check if key valid for adding as organizator
+                    $query = Model_Orm_Invite::query()->where('access_key', $access_key);
+                    $invite_obj = $query->get_one();
+
+                    if ( ! empty($invite_obj))
+                    {
+                        // access key valid, add just created user as organizator to given event
+                        $organizator = array(
+                            'event_id'  => $invite_obj->event_id,
+                            'user_id'   => $id,
+                            'role'      => 1
+                        );
+                        $new_organizator = Model_Orm_Participant::forge($organizator);
+                        $new_organizator->save();
+
+                        $invite_obj->delete();
+                    }
+                    else
+                    {
+                        // access key no longer valid
+                        $error[] = 'Reģistrēšanās atslēga vairs nav derīga.';
+                        Session::set_flash('errors', $error);
+                    }
                 }
 
                 // login with user
@@ -355,26 +374,85 @@ class Controller_User extends Controller_Public
         // check if user is guest
         $auth = Auth::instance();
         $user_group_id = $auth->get_groups();
+        $user_id = Auth::instance()->get_user_id();
+        $user_id = $user_id[1];
 
         if ($user_group_id[0][1] != 0)
         {
             // user not guest, delete this profile
             $username = $auth->get_screen_name();
 
-            if ($auth->delete_user($username))
-            {
-                //user deleted
-                Session::set_flash('success', 'Jūs veiksmīgi izdzēsāt savu profilu!');
-                Response::redirect('/');
+            // delete all invites to this event
+            $query = Model_Orm_Invite::query()
+                ->where('sender_id', $user_id)
+                ->or_where('recipient_id', $user_id);
+            $invite_obj = $query->get();
 
-            }
-            else
+            foreach ($invite_obj as $invite)
             {
-                // something wen't wrong
-                $errors[] = 'Lietotājvārds un vai parole nepareiza';
-                Session::set_flash('errors', $errors);
-                Response::redirect('/');
+                $invite->delete();
             }
+
+            // delete all participants for this event
+            $query = Model_Orm_Participant::query()->where('user_id', $user_id);
+            $participant_obj = $query->get();
+
+            foreach ($participant_obj as $participant)
+            {
+                if ($participant->role != 10)
+                {
+                    // participant isn't author, delete ir
+                    $participant->delete();
+                }
+                else
+                {
+                    // participant is author, remove author ID
+                    $participant->user_id = 0;
+                    $participant->save();
+                }
+            }
+
+            // delete all requests to this event
+            $query = Model_Orm_Request::query()->where('sender_id', $user_id);
+            $request_obj = $query->get();
+
+            foreach ($request_obj as $request)
+            {
+                $request->delete();
+            }
+
+            // delete all alerts to this event
+            $query = Model_Orm_Alert::query()->where('recipient_id', $user_id);
+            $alert_obj = $query->get();
+
+            foreach ($alert_obj as $alert)
+            {
+                $alert->delete();
+            }
+
+            // remove author from all user comments
+            $comment_obj = Model_Orm_Comment::get_comment_by_user($user_id);
+
+            foreach ($comment_obj as $comment)
+            {
+                $comment->author_id = 0;
+                $comment->save();
+            }
+
+            // remove author from all user tags
+            $query = Model_Orm_Tag::query()->where('author_id', $user_id);
+            $tag_obj = $query->get();
+
+            foreach ($tag_obj as $tag)
+            {
+                $tag->author_id = 0;
+                $tag->save();
+            }
+
+            // delete user
+            $auth->delete_user($username);
+            Session::set_flash('success', 'Jūs veiksmīgi izdzēsāt savu profilu!');
+            Response::redirect('/');
         }
     }
 
@@ -383,156 +461,165 @@ class Controller_User extends Controller_Public
      */
     public function action_edit()
     {
-        $auth = Auth::instance();
-        $user_id = Auth::instance()->get_user_id();
-        $user_id = $user_id[1];
-        $user = Model_Orm_User::find($user_id);
-
-        if (Input::method() == 'POST')
+        if (Auth::has_access('comment.create'))
         {
-            // Edit form submited, validate form
-            $is_error = false;
-            $errors = array();
-            $name_fields = array();
+            $auth = Auth::instance();
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+            $user = Model_Orm_User::find($user_id);
 
-            $name_set = false;
-            // Check if name set
-            if ( ! is_numeric(Input::post('name')))
+            if (Input::method() == 'POST')
             {
-                // check if name field not left blank
-                if (Input::post('name') != '')
-                {
-                    $name_set = true;
-                    $name_fields['name'] = Input::post('name');
-                }
-            }
-            else
-            {
-                $is_error = true;
-                $errors[] = 'Vārds nevar būt skaitlis!';
-            }
+                // Edit form submited, validate form
+                $is_error = false;
+                $errors = array();
+                $name_fields = array();
 
-            // Check if surname set
-            if ( ! is_numeric(Input::post('surname')))
-            {
-                // check if surname field not left blank
-                if (Input::post('surname') != '')
+                $name_set = false;
+                // Check if name set
+                if ( ! is_numeric(Input::post('name')))
                 {
-                    // check if name set
-                    if ($name_set)
+                    // check if name field not left blank
+                    if (Input::post('name') != '')
                     {
-                        $name_fields['surname'] = Input::post('surname');
-                    }
-                    else
-                    {
-                        // name not set, must set name and surname
-                        $is_error = true;
-                        $errors[] = 'Lūdzu ievadi arī vārdu!';
+                        $name_set = true;
+                        $name_fields['name'] = Input::post('name');
                     }
                 }
                 else
                 {
-                    // check if name set
-                    if ($name_set)
-                    {
-                        // name set, must set surname too
-                        $is_error = true;
-                        $errors[] = 'Lūdzu ievadi arī uzvārdu!';
-                    }
-                    else
-                    {
-                        $name_fields['surname'] = Input::post('surname');
-                    }
+                    $is_error = true;
+                    $errors[] = 'Vārds nevar būt skaitlis!';
                 }
-            }
-            else
-            {
-                $is_error = true;
-                $errors[] = 'Uzvārds nevar būt skaitlis!';
-            }
 
-            // Check if email set
-            if (Input::post('email') and Input::post('email') != '')
-            {
-                // Email set, check if its valid email format
-                if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                // Check if surname set
+                if ( ! is_numeric(Input::post('surname')))
                 {
-                    // Email set, check if email changed
-                    if ($user->email != Input::post('email'))
+                    // check if surname field not left blank
+                    if (Input::post('surname') != '')
                     {
-                        // email has changed, check if its already used
-                        $exist_email = Model_Orm_User::find('all', array(
-                            'where' => array(
-                                array('email', Input::post('email'))
-                            ),
-                        ));
-
-                        if ( ! empty($exist_email))
+                        // check if name set
+                        if ($name_set)
                         {
-                            // Email allready is used
-                            $is_error = true;
-                            $errors[] = 'E-pasts jau eksistē!';
+                            $name_fields['surname'] = Input::post('surname');
                         }
                         else
                         {
-                            $user_fields['email'] = Input::post('email');
+                            // name not set, must set name and surname
+                            $is_error = true;
+                            $errors[] = 'Lūdzu ievadi arī vārdu!';
+                        }
+                    }
+                    else
+                    {
+                        // check if name set
+                        if ($name_set)
+                        {
+                            // name set, must set surname too
+                            $is_error = true;
+                            $errors[] = 'Lūdzu ievadi arī uzvārdu!';
+                        }
+                        else
+                        {
+                            $name_fields['surname'] = Input::post('surname');
                         }
                     }
                 }
                 else
                 {
-                    // Email isn't valid email format
                     $is_error = true;
-                    $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                    $errors[] = 'Uzvārds nevar būt skaitlis!';
                 }
 
-            }
-
-            // If form valid create user
-            if ( ! $is_error)
-            {
-                // if email has changed, change it
-                if (isset($user_fields))
+                // Check if email set
+                if (Input::post('email') and Input::post('email') != '')
                 {
-                    // get users username
-                    $username = $auth->get_screen_name();
+                    // Email set, check if its valid email format
+                    if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
+                    {
+                        // Email set, check if email changed
+                        if ($user->email != Input::post('email'))
+                        {
+                            // email has changed, check if its already used
+                            $exist_email = Model_Orm_User::find('all', array(
+                                'where' => array(
+                                    array('email', Input::post('email'))
+                                ),
+                            ));
 
-                    $auth->update_user($user_fields, $username);
+                            if ( ! empty($exist_email))
+                            {
+                                // Email allready is used
+                                $is_error = true;
+                                $errors[] = 'E-pasts jau eksistē!';
+                            }
+                            else
+                            {
+                                $user_fields['email'] = Input::post('email');
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Email isn't valid email format
+                        $is_error = true;
+                        $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                    }
+
                 }
 
-                // if name or surname set
-                if (isset($name_fields['name']) or isset($name_fields['surname']))
+                // If form valid create user
+                if ( ! $is_error)
                 {
-                    // Save name and surname for just created user
-                    $user->set($name_fields);
-                    $user->save();
-                }
+                    // if email has changed, change it
+                    if (isset($user_fields))
+                    {
+                        // get users username
+                        $username = $auth->get_screen_name();
 
-                Session::set_flash('success', 'Jūs veiksmīgi labojāt savu profilu!');
-                Response::redirect('/');
+                        $auth->update_user($user_fields, $username);
+                    }
+
+                    // if name or surname set
+                    if (isset($name_fields['name']) or isset($name_fields['surname']))
+                    {
+                        // Save name and surname for just created user
+                        $user->set($name_fields);
+                        $user->save();
+                    }
+
+                    Session::set_flash('success', 'Jūs veiksmīgi labojāt savu profilu!');
+                    Response::redirect('/');
+                }
+                else
+                {
+                    // Some error in validation, render registeration form with errors
+                    Session::set_flash('errors', $errors);
+                    $this->template->page_title = 'Izlabo savu profilu';
+                    $this->template->content = View::forge('user/edit');
+                }
             }
             else
             {
-                // Some error in validation, render registeration form with errors
-                Session::set_flash('errors', $errors);
+                // No form submited
+                // Generate form view with existing values
+                $auth = Auth::instance();
+                $user_id = Auth::instance()->get_user_id();
+                $user_id = $user_id[1];
+                $user = Model_Orm_User::find($user_id);
+
+                $_POST['name'] = $user->name;
+                $_POST['surname'] = $user->surname;
+                $_POST['email'] = $user->email;
                 $this->template->page_title = 'Izlabo savu profilu';
                 $this->template->content = View::forge('user/edit');
             }
         }
         else
         {
-            // No form submited
-            // Generate form view with existing values
-            $auth = Auth::instance();
-            $user_id = Auth::instance()->get_user_id();
-            $user_id = $user_id[1];
-            $user = Model_Orm_User::find($user_id);
-
-            $_POST['name'] = $user->name;
-            $_POST['surname'] = $user->surname;
-            $_POST['email'] = $user->email;
-            $this->template->page_title = 'Izlabo savu profilu';
-            $this->template->content = View::forge('user/edit');
+            $errors[] = 'Tev nav tiesību labot profilu!';
+            Session::set_flash('errors', $errors);
+            Response::redirect('/');
         }
     }
 
