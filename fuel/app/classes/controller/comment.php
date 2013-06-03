@@ -277,7 +277,7 @@ class Controller_Comment extends Controller_Public
                 else
                 {
                     // doesn't have access
-                    $error[] = 'Piedod, bet tev pieejas dzēst šo komentāru.';
+                    $error[] = 'Piedod, bet tev nav pieejas dzēst šo komentāru.';
                     Session::set_flash('errors', $error);
                     Response::redirect('event/view/'.$event_id);
                 }

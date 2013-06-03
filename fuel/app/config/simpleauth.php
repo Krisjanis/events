@@ -77,6 +77,7 @@ return array(
 		 *   'super' => true,
 		 */
 		 'user'  => array(
+			'tag' => array('edit'),
 			'user' => array('edit'),
 			'event' => array('create', 'edit_attribute', 'change_to_public'),
 			'comment' => array('create', 'delete'),
@@ -86,7 +87,7 @@ return array(
 			'tag' => array('create')
 		 ),
 		 'moderator'  => array(
-			'admin' => array('event', 'block_event', 'delete_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'delete_comment', 'tag', 'demote_tag', 'delete_tag')
+			'admin' => array('event', 'block_event', 'delete_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'delete_comment', 'tag', 'tag_create', 'demote_tag', 'delete_tag')
          )
 	),
 

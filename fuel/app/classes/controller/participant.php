@@ -17,81 +17,95 @@ class Controller_Participant  extends Controller_Public
         // check if user has access to adding organizator
         if (Auth::has_access('participant.add_organizator'))
         {
-            // check if user has access to adding orginazator
-            $user_id = Auth::instance()->get_user_id();
-            $user_id = $user_id[1];
-            $query = Model_Orm_Participant::query()
-                ->where('event_id', Input::post('event_id'))
-                ->and_where_open()
-                     ->where('user_id', $user_id)
-                ->and_where_close();
-            $has_access = $query->get_one();
+            // check if event exists and is public
+            $query = Model_Orm_Event::query()->where('event_id', Input::post('event_id'));
+            $event_obj = $query->get_one();
 
-            if ( ! is_null($has_access) and $has_access->role != 0)
+            if ( !empty($event_obj) and $event_obj->type == 'public')
             {
-                if (Input::method() == 'POST')
+                // check if user has access to adding orginazator
+                $user_id = Auth::instance()->get_user_id();
+                $user_id = $user_id[1];
+                $query = Model_Orm_Participant::query()
+                    ->where('event_id', Input::post('event_id'))
+                    ->and_where_open()
+                         ->where('user_id', $user_id)
+                    ->and_where_close();
+                $has_access = $query->get_one();
+
+                if ( ! is_null($has_access) and $has_access->role != 0)
                 {
-                    if (Input::post('organizator'))
+                    if (Input::method() == 'POST')
                     {
-                        // check if user exists
-                        $query = Model_Orm_User::query()->where('username', Input::post('organizator'));
-                        $user_obj = $query->get_one();
-
-                        if ( ! is_null($user_obj))
+                        if (Input::post('organizator'))
                         {
-                            // check if it isn't already an organizator for this event
-                            $query = Model_Orm_Participant::query()
-                                ->where('event_id', Input::post('event_id'))
-                                ->and_where_open()
-                                    ->where('user_id', $user_obj->user_id)
-                                ->and_where_close();
-                            $organizator_obj = $query->get_one();
+                            // check if user exists
+                            $query = Model_Orm_User::query()->where('username', Input::post('organizator'));
+                            $user_obj = $query->get_one();
 
-                            if (is_null($organizator_obj))
+                            if ( ! is_null($user_obj))
                             {
-                                // create new invite for given user
-                                $invite = array (
-                                    'sender_id'     => $user_id,
-                                    'recipient_id'  => $user_obj->user_id,
-                                    'event_id'    => Input::post('event_id')
-                                );
+                                // check if it isn't already an organizator for this event
+                                $query = Model_Orm_Participant::query()
+                                    ->where('event_id', Input::post('event_id'))
+                                    ->and_where_open()
+                                        ->where('user_id', $user_obj->user_id)
+                                    ->and_where_close();
+                                $organizator_obj = $query->get_one();
 
-                                $new_invite = Model_Orm_Invite::forge($invite);
-
-                                if ($new_invite and $new_invite->save())
+                                if (is_null($organizator_obj))
                                 {
-                                    // new invite created
-                                    Session::set_flash('success', 'Lietotājam '.$user_obj->username.' veiksmīgi nosūtīts uzaicinājums.');
-                                    Response::redirect('event/view/'.Input::post('event_id'));
+                                    // create new invite for given user
+                                    $invite = array (
+                                        'sender_id'     => $user_id,
+                                        'recipient_id'  => $user_obj->user_id,
+                                        'event_id'    => Input::post('event_id')
+                                    );
+
+                                    $new_invite = Model_Orm_Invite::forge($invite);
+
+                                    if ($new_invite and $new_invite->save())
+                                    {
+                                        // new invite created
+                                        Session::set_flash('success', 'Lietotājam '.$user_obj->username.' veiksmīgi nosūtīts uzaicinājums.');
+                                        Response::redirect('event/view/'.Input::post('event_id'));
+                                    }
+                                }
+                                else
+                                {
+                                    // user is already organizator for this event
+                                    $error[] = 'Piedod, bet šis lietotājs jau ir organizators šim pasākumam.';
+                                    Session::set_flash('errors', $error);
                                 }
                             }
                             else
                             {
-                                // user is already organizator for this event
-                                $error[] = 'Piedod, bet šis lietotājs jau ir organizators šim pasākumam.';
+                                // user doesn't exists
+                                $error[] = 'Piedod, bet šis lietotājs neekistē.';
                                 Session::set_flash('errors', $error);
                             }
                         }
                         else
                         {
-                            // user doesn't exists
-                            $error[] = 'Piedod, bet šis lietotājs neekistē.';
+                            // no username specified
+                            $error[] = 'Norādi lietotājvārdu, kuru vēlies pievienot.';
                             Session::set_flash('errors', $error);
                         }
                     }
-                    else
-                    {
-                        // no username specified
-                        $error[] = 'Norādi lietotājvārdu, kuru vēlies pievienot.';
-                        Session::set_flash('errors', $error);
-                    }
+                    Response::redirect('event/view/'.Input::post('event_id'));
                 }
-                Response::redirect('event/view/'.Input::post('event_id'));
+                else
+                {
+                    // user doesn't have access to adding organizator
+                    $error[] = 'Piedod, bet tev nav pieejas pievienot organizatoru šim pasākumam.';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('event/view/'.Input::post('event_id'));
+                }
             }
             else
             {
-                // user doesn't have access to adding organizator
-                $error[] = 'Piedod, bet tev nav pieejas pievienot organizatoru šim pasākumam.';
+                // event not public
+                $error[] = 'Nevar pievienot organizatoru privātam pasākumam.';
                 Session::set_flash('errors', $error);
                 Response::redirect('event/view/'.Input::post('event_id'));
             }
@@ -234,28 +248,56 @@ class Controller_Participant  extends Controller_Public
         {
             is_null($event_id) and Response::redirect('/');
 
-            $user_id = Auth::instance()->get_user_id();
-            $user_id = $user_id[1];
+            // check if event exists and is public
+            $query = Model_Orm_Event::query()->where('event_id', $event_id);
+            $event_obj = $query->get_one();
 
-            // check if request isn't already sent
-            $query = Model_Orm_Request::query()
-                ->where('sender_id', $user_id)
-                ->and_where_open()
-                    ->where('event_id', $event_id)
-                ->and_where_close();
-            $existing_request = $query->get_one();
-            if ( empty($existing_request))
+            if ( !empty($event_obj) and $event_obj->type == 'public')
             {
-                // check if user already isn't an organizer for this event
-                $query = Model_Orm_Participant::query()->where('user_id', $user_id);
-                $participant = $query->get_one();
+                $user_id = Auth::instance()->get_user_id();
+                $user_id = $user_id[1];
 
-                if ( ! is_null($participant))
+                // check if request isn't already sent
+                $query = Model_Orm_Request::query()
+                    ->where('sender_id', $user_id)
+                    ->and_where_open()
+                        ->where('event_id', $event_id)
+                    ->and_where_close();
+                $existing_request = $query->get_one();
+                if ( empty($existing_request))
                 {
-                    // user is participant, check if not organizer or author
-                    if ($participant->role != 1 or $participant->role != 10)
+                    // check if user already isn't an organizer for this event
+                    $query = Model_Orm_Participant::query()->where('user_id', $user_id);
+                    $participant = $query->get_one();
+
+                    if ( ! is_null($participant))
                     {
-                        // user not organizer or author, send request
+                        // user is participant, check if not organizer or author
+                        if ($participant->role != 1 or $participant->role != 10)
+                        {
+                            // user not organizer or author, send request
+                            $request = array (
+                                'sender_id'   => $user_id,
+                                'event_id'    => $event_id
+                            );
+
+                            $new_request = Model_Orm_Request::forge($request);
+                            $new_request->save();
+
+                            Session::set_flash('success', 'Organizatora pieprasījums veiskmīgi nosūtīts.');
+                            Response::redirect('event/view/'.$event_id);
+                        }
+                        else
+                        {
+                            // user already organizer for this event
+                            $error[] = 'Tu jau esi organizētājs šajā pasākumā.';
+                            Session::set_flash('errors', $error);
+                            Response::redirect('event/view/'.$event_id);
+                        }
+                    }
+                    else
+                    {
+                        // user isn't organizator for this event
                         $request = array (
                             'sender_id'   => $user_id,
                             'event_id'    => $event_id
@@ -267,33 +309,19 @@ class Controller_Participant  extends Controller_Public
                         Session::set_flash('success', 'Organizatora pieprasījums veiskmīgi nosūtīts.');
                         Response::redirect('event/view/'.$event_id);
                     }
-                    else
-                    {
-                        // user already organizer for this event
-                        $error[] = 'Tu jau esi organizētājs šajā pasākumā.';
-                        Session::set_flash('errors', $error);
-                        Response::redirect('event/view/'.$event_id);
-                    }
                 }
                 else
                 {
-                    // user isn't organizator for this event
-                    $request = array (
-                        'sender_id'   => $user_id,
-                        'event_id'    => $event_id
-                    );
-
-                    $new_request = Model_Orm_Request::forge($request);
-                    $new_request->save();
-
-                    Session::set_flash('success', 'Organizatora pieprasījums veiskmīgi nosūtīts.');
+                    // request already sent
+                    $error[] = 'Tu jau esi nosūtījis pieprasījumu šim pasākumam.';
+                    Session::set_flash('errors', $error);
                     Response::redirect('event/view/'.$event_id);
                 }
             }
             else
             {
-                // request already sent
-                $error[] = 'Tu jau esi nosūtījis pieprasījumu šim pasākumam.';
+                // can't send request to private event
+                $error[] = 'Nevar nosūtīt organizatora pieprasījumu privātam pasākumam.';
                 Session::set_flash('errors', $error);
                 Response::redirect('event/view/'.$event_id);
             }
@@ -430,150 +458,164 @@ class Controller_Participant  extends Controller_Public
         {
             is_null($event_id) and Response::redirect('/');
 
+            // check if event exists and is public
             $query = Model_Orm_Event::query()->where('event_id', $event_id);
             $event_obj = $query->get_one();
-            if (empty($event_obj))
+
+            if ( !empty($event_obj) and $event_obj->type == 'public')
             {
-                // no event with such event id
-                $error[] = 'Piedod, bet pasākums ar šādu ID neeksistē.';
-                Session::set_flash('errors', $error);
-                Response::redirect('/');
-            }
-
-            // check if user has organizator access
-            $user_id = Auth::instance()->get_user_id();
-            $user_id = $user_id[1];
-
-            $query = Model_Orm_Participant::query()
-                ->where('event_id', $event_id)
-                ->and_where_open()
-                    ->where('user_id', $user_id)
-                ->and_where_close();
-            $has_access = $query->get_one();
-
-            if ( ! empty($has_access) and $has_access->role != 0)
-            {
-                if (Input::method() == 'POST')
+                $query = Model_Orm_Event::query()->where('event_id', $event_id);
+                $event_obj = $query->get_one();
+                if (empty($event_obj))
                 {
-                    // form submited, validate it
-                    $is_error = false;
+                    // no event with such event id
+                    $error[] = 'Piedod, bet pasākums ar šādu ID neeksistē.';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('/');
+                }
 
-                    if (Input::post('email'))
+                // check if user has organizator access
+                $user_id = Auth::instance()->get_user_id();
+                $user_id = $user_id[1];
+
+                $query = Model_Orm_Participant::query()
+                    ->where('event_id', $event_id)
+                    ->and_where_open()
+                        ->where('user_id', $user_id)
+                    ->and_where_close();
+                $has_access = $query->get_one();
+
+                if ( ! empty($has_access) and $has_access->role != 0)
+                {
+                    if (Input::method() == 'POST')
                     {
-                        // Email set, check if its valid email format
-                        if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
-                        {
-                                $query = Model_Orm_User::query()->where('email', Input::post('email'));
-                                $exist_email = $query->get_one();
+                        // form submited, validate it
+                        $is_error = false;
 
-                            if ( ! empty($exist_email))
+                        if (Input::post('email'))
+                        {
+                            // Email set, check if its valid email format
+                            if (filter_var(Input::post('email'), FILTER_VALIDATE_EMAIL))
                             {
-                                // Email allready is used
+                                    $query = Model_Orm_User::query()->where('email', Input::post('email'));
+                                    $exist_email = $query->get_one();
+
+                                if ( ! empty($exist_email))
+                                {
+                                    // Email allready is used
+                                    $is_error = true;
+                                    $errors[] = 'E-pasts jau tiek izmantot sistēmā!';
+                                }
+                            }
+                            else
+                            {
+                                // Email isn't valid email format
                                 $is_error = true;
-                                $errors[] = 'E-pasts jau tiek izmantot sistēmā!';
+                                $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                            }
+
+                        }
+                        else
+                        {
+                            // Email wans't set
+                            $is_error = true;
+                            $errors[] = 'Lūdzu ievadiet e-pastu!';
+                        }
+
+                        if (Input::post('message'))
+                        {
+                            // message set, check if not too long
+                            if (strlen(Input::post('message')) > 500)
+                            {
+                                // message to long
+                                $is_error = true;
+                                $errors[] = 'Ziņa ir pārak gara!';
                             }
                         }
                         else
                         {
-                            // Email isn't valid email format
+                            // message wasn't set
                             $is_error = true;
-                            $errors[] = 'E-pastam jābūt derīgai e-pasta adresei!';
+                            $errors[] = 'Lūdzu ievadiet ziņu!';
                         }
 
-                    }
-                    else
-                    {
-                        // Email wans't set
-                        $is_error = true;
-                        $errors[] = 'Lūdzu ievadiet e-pastu!';
-                    }
-
-                    if (Input::post('message'))
-                    {
-                        // message set, check if not too long
-                        if (strlen(Input::post('message')) > 500)
+                        if ( ! $is_error)
                         {
-                            // message to long
-                            $is_error = true;
-                            $errors[] = 'Ziņa ir pārak gara!';
+                            // invite form valid, use swift mailer to send invite via email to recipent
+                            require_once 'lib/swift_required.php';
+
+                            // use gmail smtp server for email sending
+                            $transport = Swift_SmtpTransport::newInstance('smtp.gmail.com', 465, "ssl")
+                              ->setUsername('notikumiem')
+                              ->setPassword('notikumiempassword');
+
+                            $mailer = Swift_Mailer::newInstance($transport);
+
+                            // create access key, for user to become organizator after registration
+                            $salt = mt_rand(0, mt_getrandmax());
+                            $access_key = md5($event_id.$salt);
+
+                            // save invite
+                            $invite = array (
+                                'sender_id'     => $user_id,
+                                'event_id'      => $event_id,
+                                'email'         => Input::post('email'),
+                                'message'       => Input::post('message'),
+                                'access_key'    => $access_key
+                            );
+
+                            $new_invite = Model_Orm_Invite::forge($invite);
+                            $new_invite->save();
+
+                            $event_title = $event_obj->title;
+                            $subject = "kļūsti par organizatoru pasākumā $event_title";
+
+                            $body = "Sveiks,\n\nTu esi uzaicināts kļūt par organizatoru pasākumā $event_title\n\n"
+                                   .Input::post('message')
+                                   ."\n\nnotikumiem.lv ir pasākumu organizēšanas vietne, kura palīdzēs tev parocīgāk noorganizēt jebkāka veida pasākumu. Spied zemāk redzamajā saitē un reģistrējies\n\n"
+                                   .Uri::create('user/create/'.$access_key);
+
+                            $message = Swift_Message::newInstance('Test Subject')
+                              ->setFrom(array('notikumiem@gmail.com' => 'notikumiem.lv'))
+                              ->setTo(array(Input::post('email')))
+                              ->setSubject($subject)
+                              ->setBody($body);
+
+                            $mailer->send($message);
+
+                            Session::set_flash('success', 'Lietotājam veiksmīgi nosūtīts uzaicinājums uz '.Input::post('email'));
+                            Response::redirect('event/view/'.$event_id);
+                        }
+                        else
+                        {
+                            // Some error in validation, render form with errors
+                            Session::set_flash('errors', $errors);
+                            $this->template->page_title = 'Nosūti uzaicinājumu';
+                            $this->template->content = View::forge('participant/send');
+                            $this->template->content->set('event_id', $event_id);
                         }
                     }
                     else
                     {
-                        // message wasn't set
-                        $is_error = true;
-                        $errors[] = 'Lūdzu ievadiet ziņu!';
-                    }
-
-                    if ( ! $is_error)
-                    {
-                        // invite form valid, use swift mailer to send invite via email to recipent
-                        require_once 'lib/swift_required.php';
-
-                        // use gmail smtp server for email sending
-                        $transport = Swift_SmtpTransport::newInstance('smtp.gmail.com', 465, "ssl")
-                          ->setUsername('notikumiem')
-                          ->setPassword('notikumiempassword');
-
-                        $mailer = Swift_Mailer::newInstance($transport);
-
-                        // create access key, for user to become organizator after registration
-                        $salt = mt_rand(0, mt_getrandmax());
-                        $access_key = md5($event_id.$salt);
-
-                        // save invite
-                        $invite = array (
-                            'sender_id'     => $user_id,
-                            'event_id'      => $event_id,
-                            'email'         => Input::post('email'),
-                            'message'       => Input::post('message'),
-                            'access_key'    => $access_key
-                        );
-
-                        $new_invite = Model_Orm_Invite::forge($invite);
-                        $new_invite->save();
-
-                        $event_title = $event_obj->title;
-                        $subject = "kļūsti par organizatoru pasākumā $event_title";
-
-                        $body = "Sveiks,\n\nTu esi uzaicināts kļūt par organizatoru pasākumā $event_title\n\n"
-                               .Input::post('message')
-                               ."\n\nnotikumiem.lv ir pasākumu organizēšanas vietne, kura palīdzēs tev parocīgāk noorganizēt jebkāka veida pasākumu. Spied zemāk redzamajā saitē un reģistrējies\n\n"
-                               .Uri::create('user/create/'.$access_key);
-
-                        $message = Swift_Message::newInstance('Test Subject')
-                          ->setFrom(array('notikumiem@gmail.com' => 'notikumiem.lv'))
-                          ->setTo(array(Input::post('email')))
-                          ->setSubject($subject)
-                          ->setBody($body);
-
-                        $mailer->send($message);
-
-                        Session::set_flash('success', 'Lietotājam veiksmīgi nosūtīts uzaicinājums uz '.Input::post('email'));
-                        Response::redirect('event/view/'.$event_id);
-                    }
-                    else
-                    {
-                        // Some error in validation, render form with errors
-                        Session::set_flash('errors', $errors);
+                        // no form submited, redner form view
                         $this->template->page_title = 'Nosūti uzaicinājumu';
                         $this->template->content = View::forge('participant/send');
                         $this->template->content->set('event_id', $event_id);
+
                     }
                 }
                 else
                 {
-                    // no form submited, redner form view
-                    $this->template->page_title = 'Nosūti uzaicinājumu';
-                    $this->template->content = View::forge('participant/send');
-                    $this->template->content->set('event_id', $event_id);
-
+                    // user doesn't have organizator access
+                    $error[] = 'Piedod, bet tev organizatora pieeja šim pasākumam.';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('event/view/'.$event_id);
                 }
             }
             else
             {
-                // user doesn't have organizator access
-                $error[] = 'Piedod, bet tev organizatora pieeja šim pasākumam.';
+                // can't invite organizator to private event
+                $error[] = 'Nevar nosūtīt ielūgumu uz privātu pasākumu.';
                 Session::set_flash('errors', $error);
                 Response::redirect('event/view/'.$event_id);
             }

@@ -1102,7 +1102,7 @@ class Controller_Admin extends Controller_Public
             if (Input::method() == 'POST')
             {
                 // search form submited, search for tag
-                $query = Model_Orm_Tag::query()->where('event_id', Input::post('value'));
+                $query = Model_Orm_Tag::query()->where('event_id', strtolower(Input::post('value')));
                 $comment_obj = $query->get();
 
                 if (empty($comment_obj))
@@ -1171,13 +1171,12 @@ class Controller_Admin extends Controller_Public
         isset($tags) and $this->template->content->panel->set('tags', $tags);
     }
 
-
     /**
      * Creates new tag from admin panel
      */
     public function action_tag_create()
     {
-        if (Auth::has_access('tag.create'))
+        if (Auth::has_access('admin.tag_create'))
         {
             if (Input::method() == 'POST')
             {
@@ -1185,7 +1184,7 @@ class Controller_Admin extends Controller_Public
                 if (Input::post('title') and Input::post('title') != '')
                 {
                     // comment submited, check if tag already exists
-                    $query = Model_Orm_Tag::query()->where('title', Input::post('title'));
+                    $query = Model_Orm_Tag::query()->where('title', strtolower(Input::post('title')));
                     $tag_obj = $query->get_one();
                     if (empty($tag_obj))
                     {
@@ -1195,7 +1194,7 @@ class Controller_Admin extends Controller_Public
 
                         $tag = array(
                             'author_id'    => $user_id,
-                            'title'        => Input::post('title'),
+                            'title'        => strtolower(Input::post('title')),
                             'event_count'  => 0
                         );
                         $new_tag = Model_Orm_Tag::forge($tag);

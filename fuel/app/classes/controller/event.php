@@ -504,7 +504,7 @@ class Controller_Event extends Controller_Public
                     $new_tags = explode(',', Input::post('new-tags'));
                     foreach ($new_tags as $tag_untrimed)
                     {
-                        $tag_trimed = trim($tag_untrimed);
+                        $tag_trimed = strtolower(trim($tag_untrimed));
                         if ($tag_trimed != '')
                         {
                             $tag = array(

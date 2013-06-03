@@ -19,7 +19,7 @@ class Controller_Tag  extends Controller_Public
                 if (Input::post('title') and Input::post('title') != '')
                 {
                     // comment submited, check if tag already exists
-                    $query = Model_Orm_Tag::query()->where('title', Input::post('title'));
+                    $query = Model_Orm_Tag::query()->where('title', strtolower(Input::post('title')));
                     $tag_obj = $query->get_one();
                     if (empty($tag_obj))
                     {
@@ -29,7 +29,7 @@ class Controller_Tag  extends Controller_Public
 
                         $tag = array(
                             'author_id'    => $user_id,
-                            'title'        => Input::post('title'),
+                            'title'        => strtolower(Input::post('title')),
                             'event_count'  => 0
                         );
                         $new_tag = Model_Orm_Tag::forge($tag);
@@ -275,6 +275,188 @@ class Controller_Tag  extends Controller_Public
                 Session::set_flash('errors', $errors);
                 Response::redirect('tag/search');
             }
+        }
+    }
+
+    /**
+     * Edits given events tags
+     *
+     * @param string $event_id is ID of events wichs tags needs to be edited
+     */
+    public function action_edit($event_id = null)
+    {
+        // check if user has access to editing tags
+        if (Auth::has_access('tag.edit'))
+        {
+            is_null($event_id) and Response::redirect('/');
+
+            // check if user has access to editing tags
+            $user_id = Auth::instance()->get_user_id();
+            $user_id = $user_id[1];
+            $query = Model_Orm_Participant::query()
+                ->where('event_id', $event_id)
+                ->and_where_open()
+                     ->where('user_id', $user_id)
+                ->and_where_close();
+            $has_access = $query->get_one();
+
+            if ( ! is_null($has_access) and $has_access->role != 0)
+            {
+                // get existing tags
+                $existing_tags = array();
+                $query = Model_Orm_HasTag::query()->where('event_id', $event_id);
+                $has_tag_obj = $query->get();
+
+                foreach($has_tag_obj as $has_tag)
+                {
+                    $existing_tags[] = $has_tag->tag_id;
+                }
+
+                if (Input::method() == 'POST')
+                {
+                    // tags submited, validate it
+                    if (Input::post('tags') and Input::post('tags') != '')
+                    {
+                        $tags = explode(',', Input::post('tags'));
+                        if (sizeof($tags) > 1)
+                        {
+                            // adding than one tag, check if not too many
+                            if (sizeof($tags) > 7)
+                            {
+                                // tag not set
+                                $errors[] = 'Tik daudz birkas pasākumam nevar būt, maskimālais skaits ir 7!';
+                                Session::set_flash('errors', $errors);
+                                Response::redirect('tag/edit/'.$event_id);
+                            }
+                            $is_error = false;
+                            $possible_tags = array();
+                            $tag_array = array();
+
+                            // check if each tag exists
+                            foreach ($tags as $tag)
+                            {
+                                $tag = strtolower(trim($tag));
+                                $query = Model_Orm_Tag::query()->where('title', $tag);
+                                $tag_obj = $query->get_one();
+
+
+                                if ( ! empty($tag_obj))
+                                {
+                                    // tag exists, check if is set already
+                                    if ( ! in_array($tag_obj->tag_id, $existing_tags))
+                                    {
+                                        // tag isn't set already, save it in array
+                                        $tag_array[] = $tag_obj->tag_id;
+                                    }
+
+                                    // set tag as possible tag for creation
+                                    $possible_tags[] = $tag_obj->tag_id;
+                                }
+                                else
+                                {
+                                    // tag doesn't exist
+                                    $errors[] = "$tag birka neeksistē!";
+                                    $is_error = true;
+                                }
+                            }
+
+                            // check if some of existing tag is no more set
+                            $tags_to_delete = array();
+                            foreach ($existing_tags as $tag)
+                            {
+                                if ( ! in_array($tag, $possible_tags))
+                                {
+                                    // is isn't set for adding, add it for deleting
+                                    $tags_to_delete[] = $tag;
+                                }
+                            }
+
+
+                            // if no errors, then save tags for event
+                            if ( ! $is_error)
+                            {
+                                // no error, save all tags
+                                foreach ($tag_array as $tag_id)
+                                {
+                                    $has_tag = array(
+                                        'tag_id'    => $tag_id,
+                                        'event_id'  => $event_id
+                                    );
+
+                                    $new_has_tag = Model_Orm_HasTag::forge($has_tag);
+                                    $new_has_tag->save();
+                                }
+
+                                // delete all tags set for deletion
+                                foreach ($tags_to_delete as $tag)
+                                {
+                                    DB::delete('has_tag')
+                                        ->where('tag_id', '=', $tag)
+                                        ->and_where_open()
+                                            ->where('event_id', $event_id)
+                                        ->and_where_close()
+                                        ->execute();;
+                                }
+                                Session::set_flash('success', 'Birkas veiskmīgi labotas');
+                                Response::redirect('event/view/'.$event_id);
+                            }
+                            else
+                            {
+                                // error in validation
+                                Session::set_flash('errors', $errors);
+                                Response::redirect('tag/edit/'.$event_id);
+                            }
+                        }
+                        else
+                        {
+                            // only one tag set
+                            $errors[] = 'Pasākumam vajag vismaz 2 birkas!';
+                            Session::set_flash('errors', $errors);
+                            Response::redirect('tag/edit/'.$event_id);
+                        }
+
+
+                    }
+                    else
+                    {
+                        // tag not set
+                        $errors[] = 'Ievadi birku!';
+                        Session::set_flash('errors', $errors);
+                        Response::redirect('tag/search');
+                    }
+                }
+                else
+                {
+                    // no form submited, render edit form
+                    $this->template->page_title = 'Labot Birkas';
+                    $this->template->content = View::forge('tag/edit');
+
+                    // get existing tags for input value
+                    $tags = '';
+                    foreach ($existing_tags as $tag_id)
+                    {
+                        $query = Model_Orm_Tag::query()->where('tag_id', $tag_id);
+                        $tag_obj = $query->get_one();
+                        $tags .= $tag_obj->title.', ';
+                    }
+
+                    if ($tags != '')
+                    {
+                        $_POST['tags'] = substr($tags, 0, -2);
+                    }
+                }
+            }
+            else
+            {
+                // user doesn't have access to edit this events tags
+                $error[] = 'Tev nav pieejas labot šī pasākuma birkas!';
+                Session::set_flash('errors', $error);
+                Response::redirect('event/view/'.$event_id);
+            }
+        }
+        else
+        {
+            Response::redirect('/');
         }
     }
 }

@@ -61,7 +61,7 @@
                     <?php endif; ?>
                 </td>
                 <td class="table-actions">
-                    <?php if ($event['author_id'] != 0) : ?>
+                    <?php if ($event['author_id'] != 0 and ! isset($event['admin'])) : ?>
                         <?php echo Html::anchor('admin/block_event/'.$event['id'], "<span class='label label-important'>Bloķēt un dzēst <i class=' icon-ban-circle icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties bloķēt autoru un dzēst pasākumu?')")); ?>
                     <?php else : ?>
                         <?php echo Html::anchor('admin/delete_event/'.$event['id'], "<span class='label label-important'>Dzēst <i class=' icon-remove icon-white'></i></span>", array('onclick' => "return confirm('Vai tiešām vēlaties dzēst pasākumu?')")); ?>

@@ -399,6 +399,8 @@
     <?php if ($organizator_access) : ?>
         <h3>Labot atribūtus</h3>
         <?php echo Html::anchor('event/edit_attribute/'.$event['id'], 'Labot!', array('class' => 'btn')); ?>
+        <h3>Labot birkas</h3>
+        <?php echo Html::anchor('tag/edit/'.$event['id'], 'Labot!', array('class' => 'btn')); ?>
         <?php if ($event['type'] == 'public') : ?>
             <?php if (isset($requests)) : ?>
                 <h3>Pieprasījumi kļūt par organizatoru</h3>
