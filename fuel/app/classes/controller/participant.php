@@ -416,7 +416,7 @@ class Controller_Participant  extends Controller_Public
                 $participant = array(
                     'event_id'  => $event_id,
                     'user_id'   => $user_id,
-                    'role'      => 0
+                    'role'      => 1
                 );
                 $new_participant = Model_Orm_Participant::forge($participant);
                 $new_participant->save();

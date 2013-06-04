@@ -1,4 +1,6 @@
 $(document).ready(function() {
+    // hide alert message if javascript disabled
+    $('.alert-javascript').remove();
 
     //  Not mandetory field showing/hidding in event creation
 

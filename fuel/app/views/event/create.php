@@ -85,7 +85,7 @@ if (isset($errors)) :
                 echo $_POST['tags'];
             }
         ?>"/>
-        <span class="help-block">Birkas atslēgas vārdi. Sānā ir redzamas populārākās birkas. Atdali tās ar komantu</span>
+        <span class="help-block">Birkas atslēgas vārdi. Atdali tās ar komantu</span>
     </div>
 </div>
 <div class="control-group">

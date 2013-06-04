@@ -87,7 +87,7 @@ return array(
 			'tag' => array('create')
 		 ),
 		 'moderator'  => array(
-			'admin' => array('event', 'block_event', 'delete_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'delete_comment', 'tag', 'tag_create', 'demote_tag', 'delete_tag')
+			'admin' => array('event', 'block_event', 'delete_event', 'user', 'unblock_user', 'block_user', 'power_user', 'demote_power_user', 'delete_user', 'demote_admin', 'block_user', 'comment', 'block_comment', 'delete_comment', 'tag', 'tag_create', 'demote_tag', 'delete_tag')
          )
 	),
 

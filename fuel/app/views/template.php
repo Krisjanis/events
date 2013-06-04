@@ -29,6 +29,9 @@
                 </div>
             </div>
             <div class="content-wrap clearfix">
+                <div class="alert alert-error alert-javascript">
+                    <p>Jums ir izslēgts javascript, tādējādi nevarēsiet pilnībā izmantot vietnes funckijas.</p>
+                </div>
                 <?php echo $content; ?>
             </div>
         </div>

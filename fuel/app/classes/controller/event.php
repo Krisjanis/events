@@ -426,7 +426,7 @@ class Controller_Event extends Controller_Public
                     if (is_numeric(Input::post('part_max')))
                     {
                         // max participants is numeric, check if its not real number
-                        if (strpos(Input::post('part_max'), '.') !== false)
+                        if (strpos(Input::post('part_max'), '.') != false)
                         {
                             $is_error = true;
                             $errors[] = 'Maksimālajam dalībnieku skaitam jābūt veselam skaitlim!';
@@ -437,24 +437,33 @@ class Controller_Event extends Controller_Public
                             if (Input::post('part_max') > 0)
                             {
                                 // min participants is positive integer
-                                // check if max bigger than min participants if both set
-                                if ($part_min_valid and Input::post('part_max') >= Input::post('part_min'))
+                                // check if min value set
+                                if ($part_min_valid)
                                 {
-                                    // values are correct, check if not equal
-                                    if (Input::post('part_max') == Input::post('part_min'))
+                                    // check if max bigger than min participants if both set
+                                    if ($part_min_valid and Input::post('part_max') >= Input::post('part_min'))
                                     {
-                                        $is_error = true;
-                                        $errors[] = 'Maksimālā un minimālā dalībnieku skaita vērtības sakrīt!';
+                                        // values are correct, check if not equal
+                                        if (Input::post('part_max') == Input::post('part_min'))
+                                        {
+                                            $is_error = true;
+                                            $errors[] = 'Maksimālā un minimālā dalībnieku skaita vērtības sakrīt!';
+                                        }
+                                        else
+                                        {
+                                            $event['participants_max'] = Input::post('part_max');
+                                        }
                                     }
                                     else
                                     {
-                                        $event['participants_max'] = Input::post('part_max');
+                                        $is_error = true;
+                                        $errors[] = 'Minimālajam dalībnieku ir jābūt mazākam par maksimālo dalībnieku skaitu!';
                                     }
                                 }
                                 else
                                 {
-                                    $is_error = true;
-                                    $errors[] = 'Minimālajam dalībnieku ir jābūt mazākam par maksimālo dalībnieku skaitu!';
+                                    // min value not set, save max value
+                                    $event['participants_max'] = Input::post('part_max');
                                 }
                             }
                             else

@@ -423,36 +423,34 @@ class Controller_Admin extends Controller_Public
                 foreach ($user_obj as $user)
                 {
                     // don't show deleted user
-                    if ($user->user_id == 0)
+                    if ($user->user_id != 0)
                     {
-                        break;
+                        $users[$i]['id'] = $user->user_id;
+                        $users[$i]['username'] = $user->username;
+                        ! is_null($user->name) and $users[$i]['name'] = $user->name;
+                        ! is_null($user->surname) and $users[$i]['surname'] = $user->surname;
+                        $users[$i]['email'] = $user->email;
+                        $users[$i]['last_login'] = Date::forge($user->last_login);
+                        $users[$i]['registered'] = Date::forge($user->created_at);
+                        // get user group
+                        if ($user->group == 1)
+                        {
+                            $users[$i]['group'] = 'Lietotājs';
+                        }
+                        elseif ($user->group == -1)
+                        {
+                            $users[$i]['group'] = 'Bloķēts';
+                        }
+                        elseif ($user->group == 10)
+                        {
+                            $users[$i]['group'] = 'Prasmīgs';
+                        }
+                        elseif ($user->group == 100)
+                        {
+                            $users[$i]['group'] = 'Operators';
+                        }
+                        $i++;
                     }
-
-                    $users[$i]['id'] = $user->user_id;
-                    $users[$i]['username'] = $user->username;
-                    ! is_null($user->name) and $users[$i]['name'] = $user->name;
-                    ! is_null($user->surname) and $users[$i]['surname'] = $user->surname;
-                    $users[$i]['email'] = $user->email;
-                    $users[$i]['last_login'] = Date::forge($user->last_login);
-                    $users[$i]['registered'] = Date::forge($user->created_at);
-                    // get user group
-                    if ($user->group == 1)
-                    {
-                        $users[$i]['group'] = 'Lietotājs';
-                    }
-                    elseif ($user->group == -1)
-                    {
-                        $users[$i]['group'] = 'Bloķēts';
-                    }
-                    elseif ($user->group == 10)
-                    {
-                        $users[$i]['group'] = 'Prasmīgs';
-                    }
-                    elseif ($user->group == 100)
-                    {
-                        $users[$i]['group'] = 'Operators';
-                    }
-                    $i++;
                 }
            }
         }
@@ -720,6 +718,125 @@ class Controller_Admin extends Controller_Public
                 {
                     // user is not power user
                     $error[] = 'Nevar pazemināt lietotāju, kurš nav prasmīgs lietotājs!';
+                    Session::set_flash('errors', $error);
+                    Response::redirect('admin/user');
+                }
+            }
+            else
+            {
+                // no user found, show error
+                $error[] = 'Šāds lietotājs netika atrasts, mēģini vēlreiz!';
+                Session::set_flash('errors', $error);
+                Response::redirect('admin/user');
+            }
+        }
+        else
+        {
+            // doesn't have admin access, redirect away
+            Response::redirect('/');
+        }
+    }
+
+    /**
+     * Deletes user from admin panel
+     *
+     * @param integer $user_id is ID of user to be deleted
+     */
+    public function action_delete_user($user_id = null)
+    {
+        // check if has admin access
+        if (Auth::has_access('admin.delete_user'))
+        {
+            // is user id not given, redirect away
+            is_null($user_id) and Response::redirect('/');
+
+            // get user to be deleted
+            $query = Model_Orm_User::query()->where('user_id', $user_id);
+            $user_obj = $query->get_one();
+
+            // check if user found
+            if ( ! empty($user_obj))
+            {
+                // user found, check if its not admin
+                if ($user_obj->group != 100)
+                {
+                    // delete all invites to this event
+                    $query = Model_Orm_Invite::query()
+                        ->where('sender_id', $user_id)
+                        ->or_where('recipient_id', $user_id);
+                    $invite_obj = $query->get();
+
+                    foreach ($invite_obj as $invite)
+                    {
+                        $invite->delete();
+                    }
+
+                    // delete all participants for this event
+                    $query = Model_Orm_Participant::query()->where('user_id', $user_id);
+                    $participant_obj = $query->get();
+
+                    foreach ($participant_obj as $participant)
+                    {
+                        if ($participant->role != 10)
+                        {
+                            // participant isn't author, delete ir
+                            $participant->delete();
+                        }
+                        else
+                        {
+                            // participant is author, remove author ID
+                            $participant->user_id = 0;
+                            $participant->save();
+                        }
+                    }
+
+                    // delete all requests to this event
+                    $query = Model_Orm_Request::query()->where('sender_id', $user_id);
+                    $request_obj = $query->get();
+
+                    foreach ($request_obj as $request)
+                    {
+                        $request->delete();
+                    }
+
+                    // delete all alerts to this event
+                    $query = Model_Orm_Alert::query()->where('recipient_id', $user_id);
+                    $alert_obj = $query->get();
+
+                    foreach ($alert_obj as $alert)
+                    {
+                        $alert->delete();
+                    }
+
+                    // remove author from all user comments
+                    $comment_obj = Model_Orm_Comment::get_comment_by_user($user_id);
+
+                    foreach ($comment_obj as $comment)
+                    {
+                        $comment->author_id = 0;
+                        $comment->save();
+                    }
+
+                    // remove author from all user tags
+                    $query = Model_Orm_Tag::query()->where('author_id', $user_id);
+                    $tag_obj = $query->get();
+
+                    foreach ($tag_obj as $tag)
+                    {
+                        $tag->author_id = 0;
+                        $tag->save();
+                    }
+
+                    // delete user
+                    $user_obj->delete();
+
+                    Session::set_flash('success', 'Lietotājs "'.$user_obj->username.'" veiksmīgi dzēsts!');
+                    Response::redirect('admin/user');
+                }
+                else
+                {
+                    // user is not power user
+                    $error[] = 'Nevar dzēst operatoru!';
                     Session::set_flash('errors', $error);
                     Response::redirect('admin/user');
                 }

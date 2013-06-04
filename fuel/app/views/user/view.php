@@ -46,8 +46,8 @@
         </div>
     <?php endif; ?>
     <div class="user-profile-info clearfix">
-        <p class="definition pull-left">Vārds Uzvārds</p>
         <?php if ( ! is_null($user['name']) and ! is_null($user['surname'])) : ?>
+        <p class="definition pull-left">Vārds Uzvārds</p>
         <div class="info pull-left">
             <p><?php echo $user['name'].' '.$user['surname']; ?></p>
         </div>
